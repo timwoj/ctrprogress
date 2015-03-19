@@ -14,62 +14,62 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import webapp2,sys
+import webapp2,sys,urllib2,json
 import os.path
 import ranker
 
 from lxml import html
 from google.appengine.ext import ndb
+from google.appengine.api import urlfetch
 
 class InitDBHandler(webapp2.RequestHandler):
     def get(self):
-
-        q = ranker.Group.query()
-        for r in q.fetch():
-            r.key.delete()
-
-        for fname in ['Threat Level Midnight.html', 'Boats & Hozen.html']:
-
-            folder = os.path.dirname(os.path.realpath(__file__))
-            f = open(fname, 'r')
-            text = f.read()
-
-            tree = html.fromstring(text)
-            alltrs = tree.xpath("//tbody/tr")
+    
+        url = 'https://madleet.com/~tim/ctr-groups.txt'
+        result = urlfetch.fetch(url)
+        if result.status_code != 200:
+            self.response.write('Failed to load ctr-groups file')
+            return
             
-            group = ranker.Group()
-            
-            for i,row in enumerate(alltrs):
-                if i:
-                    # break down each <tr> row into the individual <td> children
-                    # and then get the text from each one of them.  stick that
-                    # text into a list.
-                    row = [c.text for c in row.getchildren()]
-                    if i == 1:
-                        group.name = row[2].encode('utf-8','ignore')
-                        
-                    toon = row[4]
-                    if toon == None:
-                        continue
-                    elif toon == 'Aerie Peak':
-                        toon = row[3]
-                    elif toon in ['Tank','Heals','Heals/DPS','DPS']:
-                        toon = row[2]
+        jsondata = json.loads(result.content)
+        
+        for group in jsondata:
 
-                    group.toons.append(toon.encode('utf-8','ignore'))
-                        
-                group.put()
+            newgroup = ranker.Group(name=group['name'])
+            newgroup.brf = ranker.Progression(raidname="Blackrock Foundry",
+                                              numbosses=10)
+            newgroup.hm = ranker.Progression(raidname="Highmaul",
+                                             numbosses=6)
+            newgroup.toons = group['toons']
+        
+            # Check if this group already exists in the datastore.  We don't
+            # want to overwrite existing progress data for a group if we don't
+            # have to.
+            query = ranker.Group.query(ranker.Group.name == newgroup.name)
+            results = query.fetch(1)
+            
+            if (len(results) == 0):
+                # no results for this group, just insert it into the datastore
+                newgroup.put()
+            else:
+                # only thing to do here is to update the toon list to match
+                # what came over in the group data from json
+                results[0].toons = newgroup.toons
+                if results[0].brf == None:
+                    results[0].brf = newgroup.brf
+                if results[0].hm == None:
+                    results[0].hm = newgroup.hm
+                results[0].put()
+                
+            self.response.write("Added toons for %s<br/>" % newgroup.name)
+        
+        self.response.write("<br/>")
+        self.response.write("Loaded %d groups" % len(jsondata))
                     
 # The new Battle.net Mashery API requires an API key when using it.  This
 # method stores an API in the datastore so it can used in later page requests.
 class SetAPIKey(webapp2.RequestHandler):
     def get(self):
-
-        # Delete all of the entities out of the apikey datastore so fresh 
-        # entities can be loaded.
-#        q = ranker.APIKey.query()
-#        for r in q.fetch():
-#            r.key.delete()
 
         argkey = self.request.get('key')
         if ((argkey == None) or (len(argkey) == 0)):
@@ -80,7 +80,8 @@ class SetAPIKey(webapp2.RequestHandler):
             self.response.write("API Key Stored.")
 
 app = webapp2.WSGIApplication([
-    ('/', ranker.Ranker),
-    ('/initdb', InitDBHandler),
+    ('/', ranker.Display),
+    ('/loadgroups', InitDBHandler),
     ('/setapikey', SetAPIKey),
+    ('/rank', ranker.Ranker),
 ], debug=True)

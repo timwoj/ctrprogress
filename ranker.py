@@ -15,18 +15,20 @@ from google.appengine.api import urlfetch_errors
 class APIKey(ndb.Model):
     key = ndb.StringProperty(indexed=True,required=True)
 
+class Progression(ndb.Model):
+    raidname = ndb.StringProperty(indexed = True, required = True)
+    numbosses = ndb.IntegerProperty(default = 0, required = True)
+    normal = ndb.IntegerProperty(default = 0, required = True)
+    heroic = ndb.IntegerProperty(default = 0, required = True)
+    mythic = ndb.IntegerProperty(default = 0, required = True)
+    
 class Group(ndb.Model):
-    name = ndb.StringProperty(indexed=True)
+    name = ndb.StringProperty(indexed=True, required = True)
     # TODO: cache progression data?
     toons = ndb.StringProperty(repeated=True)
+    brf = ndb.StructuredProperty(Progression, required = True)
+    hm = ndb.StructuredProperty(Progression, required = True)
 
-class GroupRank(ndb.Model):
-    name = ndb.StringProperty(indexed=True)
-    rank = ndb.IntegerProperty()
-
-class Ranks(ndb.Model):
-    groups = ndb.StructuredProperty(GroupRank, repeated=True)
-    
 class APIImporter:
 
     def load(self, toonlist, data):
@@ -140,11 +142,31 @@ class Ranker(webapp2.RequestHandler):
             self.parse(difficulties, hmbosses, data, 'Highmaul', progress)
             self.parse(difficulties, brfbosses, data, 'Blackrock Foundry', progress)
             
-            self.response.write(group.name + "<br/>")
+            self.response.write(group.name + " data generated<br/>")
             self.printProgress('Highmaul', progress, len(hmbosses))
             self.printProgress('Blackrock Foundry', progress, len(brfbosses))
-            self.printProgress("<br/>")
-        
+            
+            # update the entry in ndb with the new progression data for this
+            # group.  this also checks to make sure that the progress only ever
+            # increases, in case of wierdness with the data.
+            group.brf.normal = max(group.brf.normal,
+                                   progress['Blackrock Foundry']['normal'])
+            group.brf.heroic = max(group.brf.heroic,
+                                   progress['Blackrock Foundry']['heroic'])
+            group.brf.mythic = max(group.brf.mythic,
+                                   progress['Blackrock Foundry']['mythic'])
+
+            group.hm.normal = max(group.hm.normal,
+                                  progress['Highmaul']['normal'])
+            group.hm.heroic = max(group.hm.heroic,
+                                  progress['Highmaul']['heroic'])
+            group.hm.mythic = max(group.hm.mythic,
+                                  progress['Highmaul']['mythic'])
+            
+            group.put()
+            
+            self.response.write("Finished %s" % group.name)
+            
     def parse(self, difficulties, bosses, toondata, raidname, progress):
 
         progress[raidname] = dict()
@@ -221,3 +243,20 @@ class Ranker(webapp2.RequestHandler):
                               progress[raid]['normal'], numbosses,
                               progress[raid]['heroic'], numbosses,
                               progress[raid]['mythic'], numbosses))
+
+class Display(webapp2.RequestHandler):
+    def get(self):
+        q = Group.query()
+        groups = q.fetch()
+
+        for group in groups:
+            self.response.write("%s<br/>" % group.name)
+            self.writeProgress(group.brf)
+            self.writeProgress(group.hm)
+            self.response.write("<br/>")
+            
+    def writeProgress(self, raid):
+        self.response.write("%s: %d/%dN %d/%dH %d/%dM<br/>" %
+                        (raid.raidname, raid.normal, raid.numbosses,
+                         raid.heroic, raid.numbosses, raid.mythic,
+                         raid.numbosses))
