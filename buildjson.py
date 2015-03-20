@@ -1,5 +1,8 @@
 #!/usr/local/bin/python
 
+# This script takes exported HTML from the CTR master raid group list maintained
+# by Knate, parses all of the groups, and outputs a block of JSON suitable for
+# loading into the datastore on the CTRRanks site.
 from lxml import html
 import json
 import os

@@ -32,6 +32,7 @@ class InitDBHandler(webapp2.RequestHandler):
             return
             
         jsondata = json.loads(result.content)
+        totaltoons = 0
         
         for group in jsondata:
 
@@ -62,9 +63,10 @@ class InitDBHandler(webapp2.RequestHandler):
                 results[0].put()
                 
             self.response.write("Added toons for %s<br/>" % newgroup.name)
+            totaltoons += len(newgroup.toons)
         
         self.response.write("<br/>")
-        self.response.write("Loaded %d groups" % len(jsondata))
+        self.response.write("Loaded %d toons over %d groups" % (totaltoons, len(jsondata)))
                     
 # The new Battle.net Mashery API requires an API key when using it.  This
 # method stores an API in the datastore so it can used in later page requests.
@@ -84,4 +86,5 @@ app = webapp2.WSGIApplication([
     ('/loadgroups', InitDBHandler),
     ('/setapikey', SetAPIKey),
     ('/rank', ranker.Ranker),
+    ('/builder', ranker.ProgressBuilder),
 ], debug=True)
