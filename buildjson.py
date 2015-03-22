@@ -44,7 +44,7 @@ for file in os.listdir('.'):
                 continue
             elif toon == 'Aerie Peak':
                 toon = row[3]
-            elif toon in ['Tank','Heals','Heals/DPS','DPS']:
+            elif toon in ['Tank','Heals','Heals/DPS','DPS','DPS/Tank']:
                 toon = row[2]
 
             if toon == None:
