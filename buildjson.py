@@ -31,7 +31,7 @@ for file in os.listdir('.'):
             # break down each <tr> row into the individual <td> children
             # and then get the text from each one of them.  stick that
             # text into a list.
-            row = [c.text for c in row.getchildren()]
+            row = [c.text_content() for c in row.getchildren()]
             if i == 1:
                 # there's a few groups that are poorly formed in the HTML
                 # data and should just be skipped for simplicity
@@ -44,12 +44,11 @@ for file in os.listdir('.'):
                 continue
             elif toon == 'Aerie Peak':
                 toon = row[3]
-            elif toon in ['Tank','Heals','Heals/DPS','DPS','DPS/Tank']:
+            elif toon in ['Tank','Heals','Heals/DPS','DPS','DPS/Tank','Bench/Alt']:
                 toon = row[2]
 
-            if toon == None:
-                continue
-            group['toons'].append(toon.encode('utf-8','ignore'))
+            if toon != None and len(toon) != 0:
+                group['toons'].append(toon.encode('utf-8','ignore'))
 
     if len(group['toons']) != 0:
         jsontext.append(group)
