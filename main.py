@@ -14,9 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import webapp2,sys,urllib2,json
+import webapp2,json
 import os.path
 import ranker
+import wowapi
 
 from lxml import html
 from google.appengine.ext import ndb
@@ -72,14 +73,13 @@ class InitDBHandler(webapp2.RequestHandler):
 # method stores an API in the datastore so it can used in later page requests.
 class SetAPIKey(webapp2.RequestHandler):
     def get(self):
-
         argkey = self.request.get('key')
         if ((argkey == None) or (len(argkey) == 0)):
             self.response.write("Must pass API with 'key' argument in url")
         else:
-            k = ranker.APIKey(key=self.request.get('key'))
-            k.put()
-            self.response.write("API Key Stored.")
+            setup = wowapi.Setup()
+            setup.setkey(argkey)
+            self.response.write('API key stored')
 
 app = webapp2.WSGIApplication([
     ('/', ranker.Display),

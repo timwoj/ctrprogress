@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+{% autoescape true -%}
+<html>
+  <head>
+    <title>Build Ranks</title>
+  </head>
+  <body>
+    <h3>Current Queue:</h3>
+    Tasks in queue: {{ tasks }}<br/>
+    Tasks running: {{ in_flight }}<p/>
+
+    <form action="/rank" method="post">
+      <input type="hidden" id="blank" value="blank"/>
+      <input type="submit" value="Start Processing" id="submit" {%- if tasks > 0 %}disabled{%- endif %}>
+    </form>
+  </body>
+</html>
+{% endautoescape -%}

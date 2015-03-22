@@ -20,3 +20,5 @@ libraries:
   version: "2.5.2"
 - name: lxml
   version: "latest"
+- name: jinja2
+  version: latest
