@@ -29,7 +29,7 @@ class Importer:
                 newdata = dict()
                 data.append(newdata)
 
-                url = 'https://us.api.battle.net/wow/character/aerie-peak/%s?fields=progression&locale=en_US&apikey=%s' % (toon, apikey)
+                url = 'https://us.api.battle.net/wow/character/aerie-peak/%s?fields=progression,items&locale=en_US&apikey=%s' % (toon, apikey)
                 # create the rpc object for the fetch method.  the deadline
                 # defaults to 5 seconds, but that seems to be too short for the
                 # Blizzard API site sometimes.  setting it to 10 helps a little

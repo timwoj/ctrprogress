@@ -30,7 +30,7 @@ class Group(ndb.Model):
     brf = ndb.StructuredProperty(Progression, required = True)
     hm = ndb.StructuredProperty(Progression, required = True)
     lastupdated = ndb.DateTimeProperty(auto_now=True)
-    avgilvl = ndb.IntegerProperty()
+    avgilvl = ndb.IntegerProperty(default = 0)
 
 class Global(ndb.Model):
     lastupdated = ndb.DateTimeProperty(auto_now=True)
@@ -66,6 +66,17 @@ class ProgressBuilder(webapp2.RequestHandler):
                        data, 'Highmaul', progress)
             self.parse(ProgressBuilder.difficulties, ProgressBuilder.brfbosses,
                        data, 'Blackrock Foundry', progress)
+
+            # calculate the avg ilvl values from the toon data
+            group.avgilvl = 0
+            numtoons = 0
+            for toon in data:
+                if 'items' in toon:
+                    numtoons += 1
+                    group.avgilvl += toon['items']['averageItemLevel']
+
+            if numtoons != 0:
+                group.avgilvl /= numtoons
 
             self.response.write(group.name + " data generated<br/>")
 
@@ -225,7 +236,7 @@ class Display(webapp2.RequestHandler):
 
         groups = q.fetch()
         for group in groups:
-            self.response.write('%s<br/>' % group.name)
+            self.response.write('%s (Avg ilvl: %d)<br/>' % (group.name,group.avgilvl))
             self.writeProgress(group.brf)
             self.writeProgress(group.hm)
             self.response.write('<br/>')
