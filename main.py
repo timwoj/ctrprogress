@@ -68,6 +68,11 @@ class InitDBHandler(webapp2.RequestHandler):
         
         self.response.write("<br/>")
         self.response.write("Loaded %d toons over %d groups" % (totaltoons, len(jsondata)))
+
+        # Update the last_updated field in the global database
+        g = ranker.Global()
+        g.put()
+        
                     
 # The new Battle.net Mashery API requires an API key when using it.  This
 # method stores an API in the datastore so it can used in later page requests.

@@ -228,7 +228,7 @@ class Display(webapp2.RequestHandler):
         # get the group data from the datastore, and order it in decreasing order
         # so that further progressed teams show up first.  break ties by
         # alphabetical order of group names
-        q = Group.query().order(-Group.brf.mythic, -Group.brf.heroic, -Group.brf.normal).order(-Group.hm.mythic, -Group.hm.heroic, -Group.hm.normal).order(Group.name)
+        q = Group.query().order(-Group.brf.mythic, -Group.brf.heroic, -Group.hm.mythic, -Group.brf.normal, -Group.hm.heroic, -Group.hm.normal)
 
         groups = q.fetch()
         for group in groups:
@@ -257,7 +257,7 @@ class DisplayText(webapp2.RequestHandler):
         # get the group data from the datastore, and order it in decreasing order
         # so that further progressed teams show up first.  break ties by
         # alphabetical order of group names
-        q = Group.query().order(-Group.brf.mythic, -Group.brf.heroic, -Group.brf.normal).order(-Group.hm.mythic, -Group.hm.heroic, -Group.hm.normal).order(Group.name)
+        q = Group.query().order(-Group.brf.mythic, -Group.brf.heroic, -Group.hm.mythic, -Group.brf.normal, -Group.hm.heroic, -Group.hm.normal)
 
         groups = q.fetch()
         for group in groups:
