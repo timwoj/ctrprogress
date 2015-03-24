@@ -38,7 +38,7 @@ class Global(ndb.Model):
 class ProgressBuilder(webapp2.RequestHandler):
 
     difficulties = ['normal','heroic','mythic']
-    hmbosses = ['Kargath Bladefist','The Butcher','Brackenspore','Twin Ogron','Ko\'ragh','Imperator Mar\'gok']
+    hmbosses = ['Kargath Bladefist','The Butcher','Brackenspore','Tectus','Twin Ogron','Ko\'ragh','Imperator Mar\'gok']
     brfbosses = ['Oregorger','Gruul','The Blast Furnace','Hans\'gar and Franzok','Flamebender Ka\'graz','Kromog','Beastlord Darmac','Operator Thogar','The Iron Maidens','Blackhand']
 
     def post(self):
@@ -213,9 +213,33 @@ class Ranker(webapp2.RequestHandler):
             taskqueue.add(url='/builder', params={'start':'U', 'end':'Z'})
 
         self.redirect('/rank')
-        
 
 class Display(webapp2.RequestHandler):
+    def get(self):
+
+        q = Global.query()
+        r = q.fetch()
+        template_values = {
+            'last_updated': r[0].lastupdated
+        }
+        template = JINJA_ENVIRONMENT.get_template('templates/header.html')
+        self.response.write(template.render(template_values))
+
+        # get the group data from the datastore, and order it in decreasing order
+        # so that further progressed teams show up first.  break ties by
+        # alphabetical order of group names
+        q = Group.query().order(-Group.brf.mythic, -Group.brf.heroic, -Group.brf.normal).order(-Group.hm.mythic, -Group.hm.heroic, -Group.hm.normal).order(Group.name)
+
+        groups = q.fetch()
+        for group in groups:
+            template_values = {'group' : group}
+            template = JINJA_ENVIRONMENT.get_template('templates/group.html')
+            self.response.write(template.render(template_values))
+            
+        self.response.write("        <div style='clear: both;font-size: 12px;text-align:center'>Site code by Tamen - Aerie Peak(US) &#149; <a href='http://github.com/timwoj/ctrprogress'>http://github.com/timwoj/ctrprogress<a/></div>")
+        self.response.write('</body></html>')
+
+class DisplayText(webapp2.RequestHandler):
     def get(self):
 
         q = Global.query()

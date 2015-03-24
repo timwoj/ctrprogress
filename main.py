@@ -41,7 +41,7 @@ class InitDBHandler(webapp2.RequestHandler):
             newgroup.brf = ranker.Progression(raidname="Blackrock Foundry",
                                               numbosses=10)
             newgroup.hm = ranker.Progression(raidname="Highmaul",
-                                             numbosses=6)
+                                             numbosses=7)
             newgroup.toons = group['toons']
         
             # Check if this group already exists in the datastore.  We don't
@@ -83,6 +83,7 @@ class SetAPIKey(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([
     ('/', ranker.Display),
+    ('/text', ranker.DisplayText),
     ('/loadgroups', InitDBHandler),
     ('/setapikey', SetAPIKey),
     ('/rank', ranker.Ranker),

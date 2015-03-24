@@ -1,0 +1,14 @@
+<table style="margin-top: 20px">
+  <tr>
+    <th style="font-family:quadrata;text-align:left;font-size:24px">{{ group.name }}</th>
+    <th style="font-family:quadrata;text-align:right;font-size:18px">Average ilvl: {{ group.avgilvl }}</th>
+  </tr>
+  <tr>
+    <td>
+      {% include '/templates/highmaul-table.html' %}
+    </td>
+    <td>
+      {% include '/templates/blackrock-table.html' %}
+    </td>
+  </tr>
+</table>
