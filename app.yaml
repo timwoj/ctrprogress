@@ -1,4 +1,4 @@
-application: ctrranks
+application: ctraidprogress
 version: 1
 runtime: python27
 api_version: 1
@@ -11,6 +11,10 @@ handlers:
 
 - url: /resources
   static_dir: resources
+
+- url: /howitworks\.html
+  static_files: templates/howitworks.html
+  upload: templates/howitworks\.html
 
 - url: .*
   script: main.app
