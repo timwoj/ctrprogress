@@ -7,10 +7,10 @@
       <a href="http://ctraidprogress.appspot.com"><img src="/resources/header.png"></a><p/>
       <h1>How It Works</h1>
     </div>
-    <ol>
+    <ol style="margin-left:30px;margin-right:40px">
       <li>A list of toons for each team is culled from Knate's Master Raid Team List spreadsheet.</li>
-      <li>We loop through the list of teams, and gather rogression data for each toon using the Battle.net API.</li>
-      <li>Using this progression data for the toons, progression for the team is built using the last-killed time for each boss in both Highmaul and Blackrock Foundry.  For each boss, if five or more toons have the same last-killed time, then that kill is considered a progression kill for the team as a whole.</li>
+      <li>We loop through the list of teams, and gather progression data for each toon using the Battle.net API.</li>
+      <li>Using that toon data, progression for the team is built using the last-killed time for each boss in both Highmaul and Blackrock Foundry.  For each boss, if five or more toons have the same last-killed time, then that kill is considered a progression kill for the team as a whole.</li>
       <li>This progression data is regenerated every morning at 2AM Arizona time. Prior progression for a team is never erased, only updated, so a team will never go backwards in progression.</li>
       <li>Teams are ordered on the display page using the following order: M BRF > H BRF > N BRF > M HM > H HM > N HM. This does mean that teams that have cleared more of N BRF than a team that hasn't cleared any of BRF, even if that team has cleared all of mythic HM.</li>
     </ol>
