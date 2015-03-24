@@ -5,7 +5,10 @@
         <title>CTR Progress</title>
     </head>
     <body>
-      <h1>CTR Progress</h1>
-      <h3>Last Updated: {{ last_updated.strftime('%F %I:%M:%S %p UTC') }}</h3>
-      <p/>
+      <div align=center>
+        <img src="/resources/header.png">
+        <div style="font-size:14px;text-align:center">
+          Last Updated: {{ last_updated.strftime('%F %I:%M:%S %p UTC') }}<br/>
+          <a href="/howitworks.html">How It Works</a>
+        </div>
 {% endautoescape -%}
