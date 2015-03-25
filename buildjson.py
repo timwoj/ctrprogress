@@ -50,7 +50,7 @@ for file in os.listdir('.'):
             if toon != None and len(toon) != 0:
                 group['toons'].append(toon.encode('utf-8','ignore'))
 
-    if len(group['toons']) != 0:
+    if len(group['toons']) < 5:
         jsontext.append(group)
 
 print json.dumps(jsontext)

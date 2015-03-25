@@ -166,6 +166,7 @@ class ProgressBuilder(webapp2.RequestHandler):
                 # with the last kill first
                 timelist = list(bossdata[boss][d]['timeset'])
                 timelist.sort(reverse=True)
+                logging.debug("%s %s" % (boss, str(timelist)))
 
                 # now loop through that time list.  a kill involving 5 or more
                 # players from the group is considered a kill for the whole
@@ -173,6 +174,7 @@ class ProgressBuilder(webapp2.RequestHandler):
                 for t in timelist:
 
                     count = bossdata[boss][d]['times'].count(t)
+                    logging.debug('%s: %s' % (boss, count))
                     if count >= 5:
                         bossdata[boss][d]['killed'] = True
                         bossdata[boss][d]['killtime'] = t
@@ -228,7 +230,7 @@ class Display(webapp2.RequestHandler):
         # get the group data from the datastore, and order it in decreasing order
         # so that further progressed teams show up first.  break ties by
         # alphabetical order of group names
-        q = Group.query().order(-Group.brf.mythic, -Group.brf.heroic, -Group.hm.mythic, -Group.brf.normal, -Group.hm.heroic, -Group.hm.normal)
+        q = Group.query().order(-Group.brf.mythic, -Group.brf.heroic, -Group.hm.mythic, -Group.brf.normal, -Group.hm.heroic, -Group.hm.normal).order(Group.name)
 
         groups = q.fetch()
         for group in groups:
@@ -257,7 +259,7 @@ class DisplayText(webapp2.RequestHandler):
         # get the group data from the datastore, and order it in decreasing order
         # so that further progressed teams show up first.  break ties by
         # alphabetical order of group names
-        q = Group.query().order(-Group.brf.mythic, -Group.brf.heroic, -Group.hm.mythic, -Group.brf.normal, -Group.hm.heroic, -Group.hm.normal)
+        q = Group.query().order(-Group.brf.mythic, -Group.brf.heroic, -Group.hm.mythic, -Group.brf.normal, -Group.hm.heroic, -Group.hm.normal).order(Group.name)
 
         groups = q.fetch()
         for group in groups:
@@ -272,3 +274,26 @@ class DisplayText(webapp2.RequestHandler):
                         (raid.raidname, raid.normal, raid.numbosses,
                          raid.heroic, raid.numbosses, raid.mythic,
                          raid.numbosses))
+
+class Test(webapp2.RequestHandler):
+    def get(self):
+        importer = wowapi.Importer()
+
+        q = Group.query(Group.name == 'Raided-X')
+        groups = q.fetch()
+
+        if len(groups) != 0:
+            print group.toons
+
+            data = list()
+            importer.load(group.toons, data)
+
+            progress = dict()
+            rank = ProgressBuilder()
+            rank.parse(ProgressBuilder.difficulties, ProgressBuilder.hmbosses,
+                       data, 'Highmaul', progress)
+            rank.parse(ProgressBuilder.difficulties, ProgressBuilder.brfbosses,
+                       data, 'Blackrock Foundry', progress)
+            print "Finished parsing data"
+
+            print progress

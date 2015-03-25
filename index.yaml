@@ -24,3 +24,4 @@ indexes:
     direction: desc
   - name: hm.normal
     direction: desc
+  - name: name
