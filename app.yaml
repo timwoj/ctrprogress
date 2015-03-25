@@ -16,6 +16,10 @@ handlers:
   static_files: templates/howitworks.html
   upload: templates/howitworks\.html
 
+- url: /startrank
+  script: main.app
+  login: admin
+
 - url: .*
   script: main.app
 

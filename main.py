@@ -93,4 +93,5 @@ app = webapp2.WSGIApplication([
     ('/setapikey', SetAPIKey),
     ('/rank', ranker.Ranker),
     ('/builder', ranker.ProgressBuilder),
+    webapp2.Route('/startrank', ranker.Ranker, handler_method='post'),
 ], debug=True)
