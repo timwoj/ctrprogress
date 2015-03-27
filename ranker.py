@@ -239,7 +239,8 @@ class Display(webapp2.RequestHandler):
             self.response.write(template.render(template_values))
 
         self.response.write("</div>")
-        self.response.write("        <div style='clear: both;font-size: 12px;text-align:center'>Site code by Tamen - Aerie Peak(US) &#149; <a href='http://github.com/timwoj/ctrprogress'>http://github.com/timwoj/ctrprogress<a/></div>")
+        self.response.write("<div style='clear: both;font-size: 14px;text-align:center'>Site code by Tamen - Aerie Peak(US) &#149; <a href='http://github.com/timwoj/ctrprogress'>http://github.com/timwoj/ctrprogress<a/></div><br/>")
+        self.response.write("<div style='font-size:14px;text-align:center'>This is a community project from the Threat Level Midnight raid group in the Convert to Raid family of guilds - Aerie Peak(US) and is not directly affiliated with the Convert to Raid podcast or Signals Media.</div>")
         self.response.write('</body></html>')
 
 class DisplayText(webapp2.RequestHandler):
