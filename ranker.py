@@ -255,7 +255,8 @@ class Display(webapp2.RequestHandler):
         q = Global.query()
         r = q.fetch()
         template_values = {
-            'last_updated': r[0].lastupdated
+            'last_updated': r[0].lastupdated,
+            'title' : 'Main'
         }
         template = JINJA_ENVIRONMENT.get_template('templates/header.html')
         self.response.write(template.render(template_values))
@@ -283,7 +284,8 @@ class DisplayText(webapp2.RequestHandler):
         r = q.fetch()
 
         template_values = {
-            'last_updated': r[0].lastupdated
+            'last_updated': r[0].lastupdated,
+            'title' : 'Text Display'
         }
         template = JINJA_ENVIRONMENT.get_template('templates/header.html')
         self.response.write(template.render(template_values))
@@ -313,7 +315,8 @@ class DisplayHistory(webapp2.RequestHandler):
         r = q.fetch()
 
         template_values = {
-            'last_updated': r[0].lastupdated
+            'last_updated': r[0].lastupdated,
+            'title' : 'History'
         }
         template = JINJA_ENVIRONMENT.get_template('templates/header.html')
         self.response.write(template.render(template_values))
@@ -327,16 +330,17 @@ class DisplayHistory(webapp2.RequestHandler):
         oneday = datetime.timedelta(1)
 
         for i in range(0,13):
-            self.response.write('<tr>')
-            self.response.write('<th colspan="2" style="padding-top:20px">'+str(curdate)+'</td>')
-            self.response.write('</tr>')
-            self.response.write('<tr>')
+            self.response.write('<thead><tr>\n')
+            self.response.write('<th colspan="2" style="padding-top:20px">'+str(curdate)+'</th>\n')
+            self.response.write('</tr></thead>\n')
             q = History.query(History.date == curdate)
             r = q.fetch()
             if (len(r) == 0):
                 # if there were no results for this date, add just a simple
                 # entry displaying nothing
-                self.response.write('<td>No history data for this day</td>')
+                self.response.write('<tr>\n')
+                self.response.write('<td colspan="2" style="text-align:center">No history data for this day</td>\n')
+                self.response.write('</tr>\n')
             else:
                 # if there were results, grab the entries for the day and sort
                 # them by group name
@@ -357,6 +361,7 @@ class DisplayHistory(webapp2.RequestHandler):
                         'templates/history.html')
                     self.response.write(template.render(template_values))
 
+            self.response.write('</tbody>\n')
             curdate -= oneday
 
 class Test(webapp2.RequestHandler):
