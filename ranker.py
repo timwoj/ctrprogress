@@ -2,11 +2,10 @@
 
 #!/usr/bin/env python
 
-import webapp2,jinja2,os
+import webapp2,jinja2,os,datetime
 import logging
 import wowapi
 
-from datetime import datetime
 from google.appengine.ext import ndb
 from google.appengine.api.memcache import Client
 from google.appengine.api import taskqueue
@@ -34,6 +33,19 @@ class Group(ndb.Model):
 
 class Global(ndb.Model):
     lastupdated = ndb.DateTimeProperty(auto_now=True)
+
+class HistoryEntry(ndb.Model):
+    group = ndb.StringProperty(required = True)
+    brf_mythic = ndb.IntegerProperty(default = 0, required = True)
+    brf_heroic = ndb.IntegerProperty(default = 0, required = True)
+    brf_normal = ndb.IntegerProperty(default = 0, required = True)
+    hm_mythic = ndb.IntegerProperty(default = 0, required = True)
+    hm_heroic = ndb.IntegerProperty(default = 0, required = True)
+    hm_normal = ndb.IntegerProperty(default = 0, required = True)
+
+class History(ndb.Model):
+    date = ndb.DateProperty(indexed=True)
+    updates = ndb.StructuredProperty(HistoryEntry, repeated = True)
 
 class ProgressBuilder(webapp2.RequestHandler):
 
@@ -82,22 +94,37 @@ class ProgressBuilder(webapp2.RequestHandler):
 
             # update the entry in ndb with the new progression data for this
             # group.  this also checks to make sure that the progress only ever
-            # increases, in case of wierdness with the data.
-            group.brf.normal = max(group.brf.normal,
-                                   progress['Blackrock Foundry']['normal'])
-            group.brf.heroic = max(group.brf.heroic,
-                                   progress['Blackrock Foundry']['heroic'])
-            group.brf.mythic = max(group.brf.mythic,
-                                   progress['Blackrock Foundry']['mythic'])
+            # increases, in case of wierdness with the data.  also generate
+            # history data while we're at it.
+            new_hist = HistoryEntry(group=group.name)
+            history_changed = False
 
-            group.hm.normal = max(group.hm.normal,
-                                  progress['Highmaul']['normal'])
-            group.hm.heroic = max(group.hm.heroic,
-                                  progress['Highmaul']['heroic'])
-            group.hm.mythic = max(group.hm.mythic,
-                                  progress['Highmaul']['mythic'])
+            for raid in [['brf','Blackrock Foundry'],['hm','Highmaul']]:
+                for diff in ProgressBuilder.difficulties:
+                    raid_elem = getattr(group, raid[0])
+                    old_value = getattr(raid_elem, diff)
+                    new_value = progress[raid[1]][diff]
+
+                    if (old_value < new_value):
+                        history_changed = True
+                        setattr(new_hist, raid[0]+'_'+diff, new_value)
+                        setattr(raid_elem, diff, new_value)
 
             group.put()
+
+            if history_changed:
+                now = datetime.date.today()
+                q = History.query(History.date == now)
+                r = q.fetch()
+                if len(r) != 0:
+                    h = r[0]
+                else:
+                    h = History()
+                    h.date = now
+                    h.updates = list()
+                h.updates.append(new_hist)
+                h.put()
+
             logging.info('Finished building group %s' % group.name)
         logging.info('Builder task for range %s to %s completed' % (start, end))
 
@@ -180,7 +207,7 @@ class ProgressBuilder(webapp2.RequestHandler):
                         bossdata[boss][d]['killtime'] = t
                         bossdata[boss][d]['killinv'] = count
                         progress[raidname][d] += 1
-                        ts = datetime.fromtimestamp(t/1000)
+                        ts = datetime.datetime.fromtimestamp(t/1000)
 #                    logging.info('count for %s %s at time %s (involved %d members)' % (boss, d, ts.strftime("%Y-%m-%d %H:%M:%S"), count))
                         break
 
@@ -198,6 +225,12 @@ class Ranker(webapp2.RequestHandler):
         self.response.write(template.render(template_values))
 
     def post(self):
+        # clear out any history older than two weeks
+        twoweeksago = datetime.date.today() - datetime.timedelta(14)
+        q = History.query(History.date < twoweeksago)
+        for r in q.fetch():
+            r.key.delete()
+
         # refuse to start the tasks if there are some already running
         queue = Queue()
         stats = queue.fetch_statistics()
@@ -275,6 +308,61 @@ class DisplayText(webapp2.RequestHandler):
                         (raid.raidname, raid.normal, raid.numbosses,
                          raid.heroic, raid.numbosses, raid.mythic,
                          raid.numbosses))
+
+class DisplayHistory(webapp2.RequestHandler):
+    def get(self):
+        q = Global.query()
+        r = q.fetch()
+        if (len(r)):
+            print r[0]
+
+        template_values = {
+            'last_updated': r[0].lastupdated
+        }
+        template = JINJA_ENVIRONMENT.get_template('templates/header.html')
+        self.response.write(template.render(template_values))
+
+        # add the beginnings of the table
+        self.response.write('<table>')
+
+        # request all of the history entries, sorted in reverse order by date
+        r = q.fetch()
+        curdate = datetime.date.today()
+        oneday = datetime.timedelta(1)
+
+        for i in range(0,13):
+            self.response.write('<tr>')
+            self.response.write('<th colspan="2" style="padding-top:20px">'+str(curdate)+'</td>')
+            self.response.write('</tr>')
+            self.response.write('<tr>')
+            q = History.query(History.date == curdate)
+            r = q.fetch()
+            if (len(r) == 0):
+                # if there were no results for this date, add just a simple
+                # entry displaying nothing
+                self.response.write('<td>No history data for this day</td>')
+            else:
+                # if there were results, grab the entries for the day and sort
+                # them by group name
+                updates = r[0].updates
+                updates = sorted(updates, key=lambda k: k.group)
+
+                # now loop through the groups and output the updates in some
+                # fashion.  sort the updates BRF -> HM, then M -> H -> N
+                for u in updates:
+                    print u.group
+
+                    q2 = Group.query(Group.name == u.group)
+                    r2 = q2.fetch()
+                    template_values = {
+                        'history': u,
+                        'group': r2[0],
+                    }
+                    template = JINJA_ENVIRONMENT.get_template(
+                        'templates/history.html')
+                    self.response.write(template.render(template_values))
+
+            curdate -= oneday
 
 class Test(webapp2.RequestHandler):
     def get(self):

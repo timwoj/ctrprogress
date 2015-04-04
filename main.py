@@ -89,6 +89,7 @@ class SetAPIKey(webapp2.RequestHandler):
 app = webapp2.WSGIApplication([
     ('/', ranker.Display),
     ('/text', ranker.DisplayText),
+    ('/history', ranker.DisplayHistory),
     ('/loadgroups', InitDBHandler),
     ('/setapikey', SetAPIKey),
     ('/rank', ranker.Ranker),
