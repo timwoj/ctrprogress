@@ -281,8 +281,6 @@ class DisplayText(webapp2.RequestHandler):
 
         q = Global.query()
         r = q.fetch()
-        if (len(r)):
-            print r[0]
 
         template_values = {
             'last_updated': r[0].lastupdated
@@ -313,8 +311,6 @@ class DisplayHistory(webapp2.RequestHandler):
     def get(self):
         q = Global.query()
         r = q.fetch()
-        if (len(r)):
-            print r[0]
 
         template_values = {
             'last_updated': r[0].lastupdated
@@ -350,7 +346,6 @@ class DisplayHistory(webapp2.RequestHandler):
                 # now loop through the groups and output the updates in some
                 # fashion.  sort the updates BRF -> HM, then M -> H -> N
                 for u in updates:
-                    print u.group
 
                     q2 = Group.query(Group.name == u.group)
                     r2 = q2.fetch()
