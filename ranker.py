@@ -107,7 +107,7 @@ class ProgressBuilder(webapp2.RequestHandler):
 
                     if (old_value < new_value):
                         history_changed = True
-                        setattr(new_hist, raid[0]+'_'+diff, new_value)
+                        setattr(new_hist, raid[0]+'_'+diff, new_value-old_value)
                         setattr(raid_elem, diff, new_value)
 
             group.put()
