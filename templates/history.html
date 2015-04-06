@@ -1,24 +1,24 @@
 {% autoescape true -%}
 <tr>
   <td style="text-align:left;vertical-align:top">{{ history.group }}</td>
-  <td>
+  <td style="padding-left:10px">
 {% if history.brf_mythic > 0 -%}
-Killed {{ history.brf_mythic }} new boss{% if history.brf_mythic > 1 %}es{% endif %} in Mythic Blackrock Foundry to be {{ group.brf.mythic }}/{{ group.brf.numbosses }}M<br/>
+Killed {{ history.brf_mythic }} new boss{% if history.brf_mythic > 1 %}es{% endif %} in Mythic Blackrock Foundry and is now {{ group.brf.mythic }}/{{ group.brf.numbosses }}M<br/>
 {% endif -%}
 {% if history.brf_heroic > 0 -%}
-Killed {{ history.brf_heroic }} new boss{% if history.brf_heroic > 1 %}es{% endif %} in Heroic Blackrock Foundry to be {{ group.brf.heroic }}/{{ group.brf.numbosses }}H<br/>
+Killed {{ history.brf_heroic }} new boss{% if history.brf_heroic > 1 %}es{% endif %} in Heroic Blackrock Foundry and is now {{ group.brf.heroic }}/{{ group.brf.numbosses }}H<br/>
 {% endif -%}
 {% if history.brf_normal > 0 -%}
-Killed {{ history.brf_normal }} new boss{% if history.brf_normal > 1 %}es{% endif %} in Normal Blackrock Foundry to be {{ group.brf.normal }}/{{ group.brf.numbosses }}N<br/>
+Killed {{ history.brf_normal }} new boss{% if history.brf_normal > 1 %}es{% endif %} in Normal Blackrock Foundry and is now {{ group.brf.normal }}/{{ group.brf.numbosses }}N<br/>
 {% endif -%}
 {% if history.hm_mythic > 0 -%}
-Killed {{ history.hm_mythic }} new boss{% if history.hm_mythic > 1 %}es{% endif %} in Mythic Highmaul to be {{ group.hm.mythic }}/{{ group.hm.numbosses }}M<br/>
+Killed {{ history.hm_mythic }} new boss{% if history.hm_mythic > 1 %}es{% endif %} in Mythic Highmaul and is now {{ group.hm.mythic }}/{{ group.hm.numbosses }}M<br/>
 {% endif -%}
 {% if history.hm_heroic > 0 -%}
-Killed {{ history.hm_heroic }} new boss{% if history.hm_heroic > 1 %}es{% endif %} in Heroic Highmaul to be {{ group.hm.heroic }}/{{ group.hm.numbosses }}H<br/>
+Killed {{ history.hm_heroic }} new boss{% if history.hm_heroic > 1 %}es{% endif %} in Heroic Highmaul and is now {{ group.hm.heroic }}/{{ group.hm.numbosses }}H<br/>
 {% endif -%}
 {% if history.hm_normal > 0 -%}
-Killed {{ history.hm_normal }} new boss{% if history.hm_normal > 1 %}es{% endif %} in Normal Highmaul to be {{ group.hm.normal }}/{{ group.hm.numbosses }}N<br/>
+Killed {{ history.hm_normal }} new boss{% if history.hm_normal > 1 %}es{% endif %} in Normal Highmaul and is now {{ group.hm.normal }}/{{ group.hm.numbosses }}N<br/>
 {% endif -%}
   </td>
 </tr>
