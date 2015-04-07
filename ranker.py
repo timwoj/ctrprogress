@@ -39,9 +39,15 @@ class HistoryEntry(ndb.Model):
     brf_mythic = ndb.IntegerProperty(default = 0, required = True)
     brf_heroic = ndb.IntegerProperty(default = 0, required = True)
     brf_normal = ndb.IntegerProperty(default = 0, required = True)
+    brf_mythic_total = ndb.IntegerProperty(default = 0, required = True)
+    brf_heroic_total = ndb.IntegerProperty(default = 0, required = True)
+    brf_normal_total = ndb.IntegerProperty(default = 0, required = True)
     hm_mythic = ndb.IntegerProperty(default = 0, required = True)
     hm_heroic = ndb.IntegerProperty(default = 0, required = True)
     hm_normal = ndb.IntegerProperty(default = 0, required = True)
+    hm_mythic_total = ndb.IntegerProperty(default = 0, required = True)
+    hm_heroic_total = ndb.IntegerProperty(default = 0, required = True)
+    hm_normal_total = ndb.IntegerProperty(default = 0, required = True)
 
 class History(ndb.Model):
     date = ndb.DateProperty(indexed=True)
@@ -108,6 +114,7 @@ class ProgressBuilder(webapp2.RequestHandler):
                     if (old_value < new_value):
                         history_changed = True
                         setattr(new_hist, raid[0]+'_'+diff, new_value-old_value)
+                        setattr(new_hist, raid[0]+'_'+diff+'_total', new_value)
                         setattr(raid_elem, diff, new_value)
 
             group.put()
@@ -355,7 +362,8 @@ class DisplayHistory(webapp2.RequestHandler):
                     r2 = q2.fetch()
                     template_values = {
                         'history': u,
-                        'group': r2[0],
+                        'num_brf_bosses': r2[0].brf.numbosses,
+                        'num_hm_bosses': r2[0].hm.numbosses,
                     }
                     template = JINJA_ENVIRONMENT.get_template(
                         'templates/history.html')
