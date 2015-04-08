@@ -321,6 +321,8 @@ class DisplayHistory(webapp2.RequestHandler):
         q = Global.query()
         r = q.fetch()
 
+        lastupdated = r[0].lastupdated
+
         template_values = {
             'last_updated': r[0].lastupdated,
             'title' : 'History'
@@ -332,9 +334,11 @@ class DisplayHistory(webapp2.RequestHandler):
         self.response.write('<table>')
 
         # request all of the history entries, sorted in reverse order by date
-        r = q.fetch()
         curdate = datetime.date.today()
         oneday = datetime.timedelta(1)
+
+        # this is a time object at 2AM AZ time (or 9AM UTC)
+        az2am = datetime.time(9)
 
         for i in range(0,13):
             self.response.write('<thead><tr>\n')
@@ -346,7 +350,17 @@ class DisplayHistory(webapp2.RequestHandler):
                 # if there were no results for this date, add just a simple
                 # entry displaying nothing
                 self.response.write('<tr>\n')
-                self.response.write('<td colspan="2" style="text-align:center">No history data for this day</td>\n')
+
+                self.response.write('<td colspan="2" style="text-align:center">')
+                if (i == 0):
+                    current = datetime.datetime.now()
+                    if (current > lastupdated):
+                        self.response.write('Data not parsed for today yet')
+                    else:
+                        self.response.write('No new kills for this date!')
+                else:
+                    self.response.write('No new kills for this date!')
+                self.response.write('</td>\n')
                 self.response.write('</tr>\n')
             else:
                 # if there were results, grab the entries for the day and sort
