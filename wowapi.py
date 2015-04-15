@@ -4,21 +4,20 @@
 
 import json
 import logging
+import os
 import time
 
 from google.appengine.ext import ndb
 from google.appengine.api import urlfetch
 from google.appengine.api import urlfetch_errors
 
-class APIKey(ndb.Model):
-    key = ndb.StringProperty(indexed=True,required=True)
-
 class Importer:
 
     def load(self, toonlist, data):
-        q = APIKey.query()
-        apikey = q.fetch()[0].key
-        
+        path = os.path.join(os.path.split(__file__)[0],'api-auth.json')
+        json_key = json.load(open(path))
+        apikey = json_key['blizzard']
+
         # Request all of the toon data from the blizzard API and determine the
         # group's ilvls, armor type counts and token type counts.  subs are not
         # included in the counts, since they're not really part of the main
@@ -28,8 +27,14 @@ class Importer:
                 # TODO: this object can probably be a class instead of another dict
                 newdata = dict()
                 data.append(newdata)
+                
+                realm = 'aerie-peak'
+                if '/' in toon:
+                    (toon,realm) = toon.split('/')
+                    # normalize the realm name
+                    realm = realm.lower().replace('\'','').replace(' ','-')
 
-                url = 'https://us.api.battle.net/wow/character/aerie-peak/%s?fields=progression,items&locale=en_US&apikey=%s' % (toon, apikey)
+                url = 'https://us.api.battle.net/wow/character/%s/%s?fields=progression,items&locale=en_US&apikey=%s' % (realm, toon, apikey)
                 # create the rpc object for the fetch method.  the deadline
                 # defaults to 5 seconds, but that seems to be too short for the
                 # Blizzard API site sometimes.  setting it to 10 helps a little
@@ -112,21 +117,3 @@ class Importer:
 
     def create_callback(self, rpc, name, toondata):
         return lambda: self.handle_result(rpc, name, toondata)
-
-class Setup:
-
-    # The new Battle.net Mashery API requires an API key when using it.  This
-    # method stores an API in the datastore so it can used in later page requests.
-    def setkey(self,apikey):
-
-        # Delete all of the entities out of the apikey datastore so fresh entities
-        # can be loaded.
-        q = APIKey.query()
-        result = q.fetch();
-        if (len(result) == 0):
-            k = APIKey(key = apikey)
-            k.put()
-        else:
-            k = result[0]
-            k.key = apikey
-            k.put()
