@@ -12,13 +12,13 @@ Killed {{ history.brf_heroic }} new boss{% if history.brf_heroic > 1 %}es{% endi
 Killed {{ history.brf_normal }} new boss{% if history.brf_normal > 1 %}es{% endif %} in Normal Blackrock Foundry and is now {{ history.brf_normal_total }}/{{ num_brf_bosses }}N<br/>
 {% endif -%}
 {% if history.hm_mythic > 0 -%}
-Killed {{ history.hm_mythic }} new boss{% if history.hm_mythic > 1 %}es{% endif %} in Mythic Highmaul and is now {{ group.hm_mythic_total }}/{{ num_hm_bosses }}M<br/>
+Killed {{ history.hm_mythic }} new boss{% if history.hm_mythic > 1 %}es{% endif %} in Mythic Highmaul and is now {{ history.hm_mythic_total }}/{{ num_hm_bosses }}M<br/>
 {% endif -%}
 {% if history.hm_heroic > 0 -%}
-Killed {{ history.hm_heroic }} new boss{% if history.hm_heroic > 1 %}es{% endif %} in Heroic Highmaul and is now {{ group.hm_heroic_total }}/{{ num_hm_bosses }}H<br/>
+Killed {{ history.hm_heroic }} new boss{% if history.hm_heroic > 1 %}es{% endif %} in Heroic Highmaul and is now {{ history.hm_heroic_total }}/{{ num_hm_bosses }}H<br/>
 {% endif -%}
 {% if history.hm_normal > 0 -%}
-Killed {{ history.hm_normal }} new boss{% if history.hm_normal > 1 %}es{% endif %} in Normal Highmaul and is now {{ group.hm_normal_total }}/{{ num_hm_bosses }}N<br/>
+Killed {{ history.hm_normal }} new boss{% if history.hm_normal > 1 %}es{% endif %} in Normal Highmaul and is now {{ history.hm_normal_total }}/{{ num_hm_bosses }}N<br/>
 {% endif -%}
   </td>
 </tr>
