@@ -33,6 +33,9 @@ class Group(ndb.Model):
 
 class Global(ndb.Model):
     lastupdated = ndb.DateTimeProperty(auto_now=True)
+    num_brf_bosses = ndb.IntegerProperty(default = 10, required = True)
+    num_hm_bosses = ndb.IntegerProperty(default = 7, required = True)
+    num_hfc_bosses = ndb.IntegerProperty(default = 12, required = True)
 
 class HistoryEntry(ndb.Model):
     group = ndb.StringProperty(required = True)
@@ -368,16 +371,19 @@ class DisplayHistory(webapp2.RequestHandler):
                 updates = r[0].updates
                 updates = sorted(updates, key=lambda k: k.group)
 
+                # Grab the global data so we can populate the template with
+                # a couple of the values.
+                q2 = Global.query()
+                r2 = q2.fetch()
+
                 # now loop through the groups and output the updates in some
                 # fashion.  sort the updates BRF -> HM, then M -> H -> N
                 for u in updates:
 
-                    q2 = Group.query(Group.name == u.group)
-                    r2 = q2.fetch()
                     template_values = {
                         'history': u,
-                        'num_brf_bosses': r2[0].brf.numbosses,
-                        'num_hm_bosses': r2[0].hm.numbosses,
+                        'num_brf_bosses': r2[0].num_brf_bosses,
+                        'num_hm_bosses': r2[0].num_hm_bosses,
                     }
                     template = JINJA_ENVIRONMENT.get_template(
                         'templates/history.html')

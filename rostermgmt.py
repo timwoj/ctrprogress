@@ -27,7 +27,7 @@ import ranker
 from google.appengine.api import urlfetch
 urlfetch.set_default_fetch_deadline(20);
 
-class GroupBuilder(webapp2.RequestHandler):
+class RosterBuilder(webapp2.RequestHandler):
     def get(self):
 #        json_key = json.load(open('timwojapitest-c345f9cd7499.json'))
 #        scope = ['https://spreadsheets.google.com/feeds']
@@ -48,11 +48,27 @@ class GroupBuilder(webapp2.RequestHandler):
         groupnames = bigroster.row_values(1)
         actives = bigroster.row_values(2)
         groups = list()
+
+        # Grab all of the group names, but discard any that are marked
+        # Disbanded.  This will cause disbanded groups to get deleted in the
+        # next part.
         for i,group in enumerate(groupnames):
             if len(group) > 0 and actives[i] != 'Disbanded':
-                groups.append(group)
+                    groups.append(group)
+
         logging.info('num groups: %d' % len(groups))
-                
+
+        # Grab the list of groups already in the database.  Loop through and
+        # delete any groups that don't exist in the list (it happens...) and
+        # any groups that are now marked disbanded.  Groups listed in the
+        # history will remain even if they disband.
+        query = ranker.Group.query()
+        results = query.fetch()
+        for res in results:
+            if res.name not in groups:
+                self.response.write('Removed disbanded or non-existent team: %s<br/>\n' % res.name)
+                res.key.delete()
+
         groupcount = 0
         tooncount = 0
         for g in groups:
@@ -75,12 +91,12 @@ class GroupBuilder(webapp2.RequestHandler):
                 toon = row[3].encode('utf-8','ignore')
                 if len(toon) == 0:
                     continue
-                
+
                 if row[4] != 'Aerie Peak':
                     toon += '/%s' % row[4].encode('utf-8','ignore')
-                    
+
                 toons.append(toon)
-            
+
             toons = sorted(toons)
 
             # Check if this group already exists in the datastore.  We don't
@@ -88,12 +104,12 @@ class GroupBuilder(webapp2.RequestHandler):
             # have to.
             query = ranker.Group.query(ranker.Group.name == g)
             results = query.fetch(1)
-            
+
             loggroup = False
             if (len(results) == 0):
                 # create a new group, but only if it has at least 5 toons in
                 # it.  that's the threshold for building progress data and
-                # there's no real reason to create groups with only that many 
+                # there's no real reason to create groups with only that many
                 # toons.
                 if (len(toons) >= 5):
                     newgroup = ranker.Group(name=g)
@@ -104,6 +120,8 @@ class GroupBuilder(webapp2.RequestHandler):
                     newgroup.toons = toons
                     newgroup.put()
                     loggroup = True
+                else:
+                    self.response.write('New group %s only has %d toons and was not included<br/>\n' % (g, len(toons)))
             else:
                 # the group already exists and all we need to do is update the
                 # toon list.  all of the other data stays the same.
@@ -111,13 +129,11 @@ class GroupBuilder(webapp2.RequestHandler):
                 existing.toons = toons
                 existing.put()
                 loggroup = True
-                
+
             if loggroup:
                 groupcount += 1
                 tooncount += len(toons)
                 self.response.write('Stored group %s with %d toons<br/>\n' % (g,len(toons)))
-                
-            break
-                
+
         self.response.write('<br/>')
         self.response.write('Now managing %d groups with %d total toons<br/>' % (groupcount, tooncount))

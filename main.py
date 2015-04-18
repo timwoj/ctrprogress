@@ -16,13 +16,13 @@
 #
 import webapp2
 import ranker
-import groupmgmt
+import rostermgmt
 
 app = webapp2.WSGIApplication([
     ('/', ranker.Display),
     ('/text', ranker.DisplayText),
     ('/history', ranker.DisplayHistory),
-    ('/loadgroups', groupmgmt.GroupBuilder),
+    ('/loadgroups', rostermgmt.RosterBuilder),
     ('/rank', ranker.Ranker),
     ('/builder', ranker.ProgressBuilder),
     webapp2.Route('/startrank', ranker.Ranker, handler_method='post'),
