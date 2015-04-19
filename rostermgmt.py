@@ -19,16 +19,96 @@ import gspread
 import json
 import logging
 import os
+import operator
 
 import ranker
+
+import time
+from concurrent import futures
+import gc
 
 # Force the deadline for urlfetch to be 10 seconds (Default is 5).  For some
 # reason, that first lookup for the spreadsheet takes a bit.
 from google.appengine.api import urlfetch
 urlfetch.set_default_fetch_deadline(20);
 
+def worker(g, sheet):
+    t4 = time.time()
+    logging.info('working on group %s' % g)
+    groupsheet = sheet.worksheet(g)
+    data = groupsheet.get_all_values()
+
+    # build up a list of toons for the group from the spreadsheet
+    toons = list()
+
+    # each tr is a row in the table.  we care about columns 4-6, which are
+    # the character name, the server, and the role.
+    for i,row in enumerate(data):
+        # skip the first row which is a header row
+        if i == 0:
+            continue
+
+        # get the text of the cells of the row and skip any rows where
+        # column 4 is a non-breaking space.
+        toon = row[3].encode('utf-8','ignore')
+        if len(toon) == 0:
+            continue
+
+        if row[4] != 'Aerie Peak':
+            toon += '/%s' % row[4].encode('utf-8','ignore')
+
+        toons.append(toon)
+
+    toons = sorted(toons)
+
+    t5 = time.time()
+
+    # Check if this group already exists in the datastore.  We don't
+    # want to overwrite existing progress data for a group if we don't
+    # have to.
+    query = ranker.Group.query(ranker.Group.name == g)
+    results = query.fetch(1)
+
+    responsetext = ''
+    loggroup = False
+    if (len(results) == 0):
+        # create a new group, but only if it has at least 5 toons in
+        # it.  that's the threshold for building progress data and
+        # there's no real reason to create groups with only that many
+        # toons.
+        if (len(toons) >= 5):
+            newgroup = ranker.Group(name=g)
+            newgroup.brf = ranker.Progression(raidname="Blackrock Foundry",
+                                              numbosses=10)
+            newgroup.hm = ranker.Progression(raidname="Highmaul",
+                                             numbosses=7)
+            newgroup.toons = toons
+            newgroup.put()
+            loggroup = True
+        else:
+            responsetext = 'New group %s only has %d toons and was not included<br/>\n' % (g, len(toons))
+    else:
+        # the group already exists and all we need to do is update the
+        # toon list.  all of the other data stays the same.
+        existing = results[0]
+        existing.toons = toons
+        existing.put()
+        loggroup = True
+
+    if loggroup:
+        responsetext = 'Stored group %s with %d toons<br/>\n' % (g,len(toons))
+    t6 = time.time()
+
+    logging.info('time spent getting toons for %s: %s' % (g, (t5-t4)))
+    logging.info('time spent updating db for %s: %s' % (g, (t6-t5)))
+
+    gc.collect()
+    return (loggroup, len(toons), responsetext)
+
 class RosterBuilder(webapp2.RequestHandler):
+
     def get(self):
+
 #        json_key = json.load(open('timwojapitest-c345f9cd7499.json'))
 #        scope = ['https://spreadsheets.google.com/feeds']
 #        credentials = SignedJwtAssertionCredentials(json_key['client_email'],
@@ -43,6 +123,7 @@ class RosterBuilder(webapp2.RequestHandler):
 
         sheet = gc.open_by_key('1tvpsPzZCFupJkTT1y7RmMkuh5VsjBiiA7FvYruJbTtw')
 
+        t1 = time.time()
         logging.info('getting roster sheet')
         bigroster = sheet.worksheet('BIG ROSTER BOARD')
         groupnames = bigroster.row_values(1)
@@ -54,9 +135,11 @@ class RosterBuilder(webapp2.RequestHandler):
         # next part.
         for i,group in enumerate(groupnames):
             if len(group) > 0 and actives[i] != 'Disbanded':
-                    groups.append(group)
-
+                groups.append(group)
+        groups = sorted(groups)
+        
         logging.info('num groups: %d' % len(groups))
+        t2 = time.time()
 
         # Grab the list of groups already in the database.  Loop through and
         # delete any groups that don't exist in the list (it happens...) and
@@ -69,71 +152,57 @@ class RosterBuilder(webapp2.RequestHandler):
                 self.response.write('Removed disbanded or non-existent team: %s<br/>\n' % res.name)
                 res.key.delete()
 
+        t3 = time.time()
+
+        logging.info('time spent getting list of groups %s' % (t2-t1))
+        logging.info('time spent cleaning groups %s' % (t3-t2))
+
+        # use a threadpoolexecutor from concurrent.futures to gather the group
+        # rosters in parallel.  due to the memory limits on GAE, we only allow
+        # 25 threads at a time.  this comes *really* close to hitting both the
+        # limit on page-load time and the limit on memory.
         groupcount = 0
         tooncount = 0
+        responses = dict()
+
+        executor = futures.ThreadPoolExecutor(max_workers=25)
+
+        fs = dict()
         for g in groups:
-            logging.info('working on group %s' % g)
-            groupsheet = sheet.worksheet(g)
-            data = groupsheet.get_all_values()
+            fs[executor.submit(worker, g, sheet)] = g
 
-            # build up a list of toons for the group from the spreadsheet
-            toons = list()
-
-            # each tr is a row in the table.  we care about columns 4-6, which are
-            # the character name, the server, and the role.
-            for i,row in enumerate(data):
-                # skip the first row which is a header row
-                if i == 0:
-                    continue
-
-                # get the text of the cells of the row and skip any rows where
-                # column 4 is a non-breaking space.
-                toon = row[3].encode('utf-8','ignore')
-                if len(toon) == 0:
-                    continue
-
-                if row[4] != 'Aerie Peak':
-                    toon += '/%s' % row[4].encode('utf-8','ignore')
-
-                toons.append(toon)
-
-            toons = sorted(toons)
-
-            # Check if this group already exists in the datastore.  We don't
-            # want to overwrite existing progress data for a group if we don't
-            # have to.
-            query = ranker.Group.query(ranker.Group.name == g)
-            results = query.fetch(1)
-
-            loggroup = False
-            if (len(results) == 0):
-                # create a new group, but only if it has at least 5 toons in
-                # it.  that's the threshold for building progress data and
-                # there's no real reason to create groups with only that many
-                # toons.
-                if (len(toons) >= 5):
-                    newgroup = ranker.Group(name=g)
-                    newgroup.brf = ranker.Progression(raidname="Blackrock Foundry",
-                                                      numbosses=10)
-                    newgroup.hm = ranker.Progression(raidname="Highmaul",
-                                                     numbosses=7)
-                    newgroup.toons = toons
-                    newgroup.put()
-                    loggroup = True
-                else:
-                    self.response.write('New group %s only has %d toons and was not included<br/>\n' % (g, len(toons)))
+        for future in futures.as_completed(fs):
+            g = fs[future]
+            if future.exception() is not None:
+                logging.info("%s generated an exception: %s" % (g, future.exception()))
             else:
-                # the group already exists and all we need to do is update the
-                # toon list.  all of the other data stays the same.
-                existing = results[0]
-                existing.toons = toons
-                existing.put()
-                loggroup = True
+                returnval = future.result()
+                responses[g] = returnval[2]
+                if returnval[0] == True:
+                    groupcount += 1
+                    tooncount += returnval[1]
+        fs.clear()
 
-            if loggroup:
-                groupcount += 1
-                tooncount += len(toons)
-                self.response.write('Stored group %s with %d toons<br/>\n' % (g,len(toons)))
+        # for g in groupsp2:
+        #     fs[executor.submit(worker, g, sheet)] = g
+
+        # for future in futures.as_completed(fs):
+        #     g = fs[future]
+        #     if future.exception() is not None:
+        #         logging.info("%s generated an exception: %s" % (g, future.exception()))
+        #     else:
+        #         returnval = future.result()
+        #         responses[g] = returnval[2]
+        #         if returnval[0] == True:
+        #             groupcount += 1
+        #             tooncount += returnval[1]
+
+        responses = sorted(responses.items(), key=operator.itemgetter(0))
+        for i in responses:
+            self.response.write(i[1])
+
+        t6 = time.time()
+        logging.info('time spent building groups %s' % (t6-t3))
 
         self.response.write('<br/>')
         self.response.write('Now managing %d groups with %d total toons<br/>' % (groupcount, tooncount))
