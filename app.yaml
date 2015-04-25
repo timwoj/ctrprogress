@@ -19,6 +19,22 @@ handlers:
 - url: /startrank
   script: main.app
   login: admin
+  auth_fail_action: unauthorized
+
+- url: /rank
+  script: main.app
+  login: admin
+  auth_fail_action: unauthorized
+
+- url: /builder
+  script: main.app
+  login: admin
+  auth_fail_action: unauthorized
+
+- url: /loadgroups
+  script: main.app
+  login: admin
+  auth_fail_action: unauthorized
 
 - url: .*
   script: main.app

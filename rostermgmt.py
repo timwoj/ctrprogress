@@ -84,6 +84,7 @@ def worker(g, sheet):
                                              numbosses=7)
             newgroup.toons = toons
             newgroup.put()
+            responsetext = 'Added new group %s with %d toons<br/>\n' % (g,len(toons))
             loggroup = True
         else:
             responsetext = 'New group %s only has %d toons and was not included<br/>\n' % (g, len(toons))
@@ -93,10 +94,9 @@ def worker(g, sheet):
         existing = results[0]
         existing.toons = toons
         existing.put()
+        responsetext = 'Updated existing group %s with %d toons<br/>\n' % (g,len(toons))
         loggroup = True
 
-    if loggroup:
-        responsetext = 'Stored group %s with %d toons<br/>\n' % (g,len(toons))
     t6 = time.time()
 
     logging.info('time spent getting toons for %s: %s' % (g, (t5-t4)))
@@ -108,13 +108,6 @@ def worker(g, sheet):
 class RosterBuilder(webapp2.RequestHandler):
 
     def get(self):
-
-#        json_key = json.load(open('timwojapitest-c345f9cd7499.json'))
-#        scope = ['https://spreadsheets.google.com/feeds']
-#        credentials = SignedJwtAssertionCredentials(json_key['client_email'],
-#                                                    json_key['private_key'],
-#                                                    scope)
-#        gc = gspread.authorize(credentials)
 
         path = os.path.join(os.path.split(__file__)[0],'api-auth.json')
         json_key = json.load(open(path))
@@ -182,20 +175,6 @@ class RosterBuilder(webapp2.RequestHandler):
                     groupcount += 1
                     tooncount += returnval[1]
         fs.clear()
-
-        # for g in groupsp2:
-        #     fs[executor.submit(worker, g, sheet)] = g
-
-        # for future in futures.as_completed(fs):
-        #     g = fs[future]
-        #     if future.exception() is not None:
-        #         logging.info("%s generated an exception: %s" % (g, future.exception()))
-        #     else:
-        #         returnval = future.result()
-        #         responses[g] = returnval[2]
-        #         if returnval[0] == True:
-        #             groupcount += 1
-        #             tooncount += returnval[1]
 
         responses = sorted(responses.items(), key=operator.itemgetter(0))
         for i in responses:
