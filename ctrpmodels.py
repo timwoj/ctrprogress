@@ -109,6 +109,12 @@ class Mergev1tov2(webapp2.RequestHandler):
                     newboss = Boss(name = boss)
                     group.hfc.bosses.append(newboss)
 
+            if group.brf.bosses == None or len(group.brf.bosses) == 0:
+                group.brf.bosses = list()
+                for boss in Constants.brfbosses:
+                    newboss = Boss(name = boss)
+                    group.brf.bosses.append(newboss)
+                        
             # remove obsolete fields from the data table
             if 'numbosses' in group.hm._properties:
                 del group.hm._properties['numbosses']

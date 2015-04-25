@@ -6,6 +6,10 @@ import webapp2,jinja2,os,datetime
 import logging
 import wowapi
 
+from ctrpmodels import Constants
+from ctrpmodels import Group
+import ctrpmodels
+
 from google.appengine.ext import ndb
 from google.appengine.api.memcache import Client
 from google.appengine.api import taskqueue
@@ -57,10 +61,12 @@ class ProgressBuilder(webapp2.RequestHandler):
         importer.load(group.toons, data)
 
         progress = dict()
-        self.parse(ProgressBuilder.difficulties, ProgressBuilder.hmbosses,
-                   data, 'Highmaul', progress, writeDB)
-        self.parse(ProgressBuilder.difficulties, ProgressBuilder.brfbosses,
-                   data, 'Blackrock Foundry', progress, writeDB)
+        self.parse(Constants.difficulties, Constants.hmbosses,
+                   data, Constants.hmname, progress, writeDB)
+        self.parse(Constants.difficulties, Constants.brfbosses,
+                   data, Constants.brfname, progress, writeDB)
+
+        print progress
 
         # calculate the avg ilvl values from the toon data
         group.avgilvl = 0
@@ -79,14 +85,18 @@ class ProgressBuilder(webapp2.RequestHandler):
         # group.  this also checks to make sure that the progress only ever
         # increases, in case of wierdness with the data.  also generate
         # history data while we're at it.
-        new_hist = HistoryEntry(group=group.name)
+        new_hist = ctrpmodels.HistoryEntry(group=group.name)
         history_changed = False
 
-        for raid in [['brf','Blackrock Foundry'],['hm','Highmaul']]:
-            for diff in ProgressBuilder.difficulties:
+        # This entire if statement feels like a big hack, with all of the getattr
+        # and setattr calls.  It's probably just a fact of how the data models are
+        # laid out, but it feels really messy.
+        for raid in [('brf',Constants.brfname,Constants.brfbosses),
+                     ('hm',Constants.hmname,Constants.hmbosses)]:
+            for diff in Constants.difficulties:
                 raid_elem = getattr(group, raid[0])
                 old_value = getattr(raid_elem, diff)
-                new_value = progress[raid[1]][diff]
+                new_value = progress[raid[1]][diff]['count']
 
                 if (old_value < new_value):
                     history_changed = True
@@ -94,6 +104,14 @@ class ProgressBuilder(webapp2.RequestHandler):
                     setattr(new_hist, raid[0]+'_'+diff+'_total', new_value)
                     setattr(raid_elem, diff, new_value)
 
+                if raid[0] == 'hm':
+                    continue    
+                    
+                for bossname in raid[2]:
+                    if progress[raid[1]][diff][bossname] == True:
+                        boss_entry = [b for b in raid_elem.bosses if b.name == bossname][0]
+                        setattr(boss_entry, diff+'dead', True)
+                    
         print group
                     
         if writeDB:
@@ -101,12 +119,12 @@ class ProgressBuilder(webapp2.RequestHandler):
 
         if history_changed:
             now = datetime.date.today()
-            q = History.query(History.date == now)
+            q = ctrpmodels.History.query(ctrpmodels.History.date == now)
             r = q.fetch()
             if len(r) != 0:
                 h = r[0]
             else:
-                h = History()
+                h = ctrpmodels.History()
                 h.date = now
                 h.updates = list()
             h.updates.append(new_hist)
@@ -127,9 +145,6 @@ class ProgressBuilder(webapp2.RequestHandler):
                 bossdata[boss][d] = dict()
                 bossdata[boss][d]['times'] = list()
                 bossdata[boss][d]['timeset'] = set()
-                bossdata[boss][d]['killed'] = True
-                bossdata[boss][d]['killtime'] = 0
-                bossdata[boss][d]['killinv'] = 0
 
         # loop through each toon in the data from the blizzard API
         for toon in toondata:
@@ -163,9 +178,11 @@ class ProgressBuilder(webapp2.RequestHandler):
         # progress data
         for d in difficulties:
 
-            progress[raidname][d] = 0
+            progress[raidname][d] = dict()
+            progress[raidname][d]['count'] = 0
             for boss in bosses:
 
+                progress[raidname][d][boss] = False
                 # for each boss, grab the set of unique timestamps and sort it
                 # with the last kill first
                 timelist = list(bossdata[boss][d]['timeset'])
@@ -181,12 +198,9 @@ class ProgressBuilder(webapp2.RequestHandler):
                     print('%s: time: %d   count: %s' % (boss, t, count))
                     if count >= 5:
                         print('*** found valid kill for %s %s at %d' % (d, boss, t))
-                        bossdata[boss][d]['killed'] = True
-                        bossdata[boss][d]['killtime'] = t
-                        bossdata[boss][d]['killinv'] = count
-                        progress[raidname][d] += 1
+                        progress[raidname][d]['count'] += 1
+                        progress[raidname][d][boss] = True
                         ts = datetime.datetime.fromtimestamp(t/1000)
-#                    logging.info('count for %s %s at time %s (involved %d members)' % (boss, d, ts.strftime("%Y-%m-%d %H:%M:%S"), count))
                         break
                     
     def get(self):
@@ -196,7 +210,6 @@ class ProgressBuilder(webapp2.RequestHandler):
         groups = q.fetch()
         logging.info('found %d groups with that name' % len(groups))
         if (len(groups) != 0):
-
             importer = wowapi.Importer()
             self.processGroup(groups[0], importer, False)
 
@@ -253,9 +266,9 @@ class Test(webapp2.RequestHandler):
 
             progress = dict()
             rank = ProgressBuilder()
-            rank.parse(ProgressBuilder.difficulties, ProgressBuilder.hmbosses,
+            rank.parse(Constants.difficulties, Constants.hmbosses,
                        data, 'Highmaul', progress)
-            rank.parse(ProgressBuilder.difficulties, ProgressBuilder.brfbosses,
+            rank.parse(Constants.difficulties, Constants.brfbosses,
                        data, 'Blackrock Foundry', progress)
             print "Finished parsing data"
 
