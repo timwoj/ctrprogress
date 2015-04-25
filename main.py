@@ -15,15 +15,19 @@
 # limitations under the License.
 #
 import webapp2
+import ctrpmodels
+import display
 import ranker
 import rostermgmt
 
 app = webapp2.WSGIApplication([
-    ('/', ranker.Display),
-    ('/text', ranker.DisplayText),
-    ('/history', ranker.DisplayHistory),
+    ('/', display.Display),
+    ('/text', display.DisplayText),
+    ('/history', display.DisplayHistory),
     ('/loadgroups', rostermgmt.RosterBuilder),
     ('/rank', ranker.Ranker),
     ('/builder', ranker.ProgressBuilder),
+    ('/mergedb', ctrpmodels.Mergev1tov2),
+    webapp2.Route('/loadone', ranker.ProgressBuilder, handler_method='get'),
     webapp2.Route('/startrank', ranker.Ranker, handler_method='post'),
 ], debug=True)

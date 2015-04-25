@@ -16,51 +16,7 @@ JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
     extensions=['jinja2.ext.autoescape'])
 
-class Progression(ndb.Model):
-    raidname = ndb.StringProperty(indexed = True, required = True)
-    numbosses = ndb.IntegerProperty(default = 0, required = True)
-    normal = ndb.IntegerProperty(default = 0, required = True)
-    heroic = ndb.IntegerProperty(default = 0, required = True)
-    mythic = ndb.IntegerProperty(default = 0, required = True)
-
-class Group(ndb.Model):
-    name = ndb.StringProperty(indexed=True, required = True)
-    toons = ndb.StringProperty(repeated=True)
-    brf = ndb.StructuredProperty(Progression, required = True)
-    hm = ndb.StructuredProperty(Progression, required = True)
-    lastupdated = ndb.DateTimeProperty(auto_now=True)
-    avgilvl = ndb.IntegerProperty(default = 0)
-
-class Global(ndb.Model):
-    lastupdated = ndb.DateTimeProperty(auto_now=True)
-    num_brf_bosses = ndb.IntegerProperty(default = 10, required = True)
-    num_hm_bosses = ndb.IntegerProperty(default = 7, required = True)
-    num_hfc_bosses = ndb.IntegerProperty(default = 12, required = True)
-
-class HistoryEntry(ndb.Model):
-    group = ndb.StringProperty(required = True)
-    brf_mythic = ndb.IntegerProperty(default = 0, required = True)
-    brf_heroic = ndb.IntegerProperty(default = 0, required = True)
-    brf_normal = ndb.IntegerProperty(default = 0, required = True)
-    brf_mythic_total = ndb.IntegerProperty(default = 0, required = True)
-    brf_heroic_total = ndb.IntegerProperty(default = 0, required = True)
-    brf_normal_total = ndb.IntegerProperty(default = 0, required = True)
-    hm_mythic = ndb.IntegerProperty(default = 0, required = True)
-    hm_heroic = ndb.IntegerProperty(default = 0, required = True)
-    hm_normal = ndb.IntegerProperty(default = 0, required = True)
-    hm_mythic_total = ndb.IntegerProperty(default = 0, required = True)
-    hm_heroic_total = ndb.IntegerProperty(default = 0, required = True)
-    hm_normal_total = ndb.IntegerProperty(default = 0, required = True)
-
-class History(ndb.Model):
-    date = ndb.DateProperty(indexed=True)
-    updates = ndb.StructuredProperty(HistoryEntry, repeated = True)
-
 class ProgressBuilder(webapp2.RequestHandler):
-
-    difficulties = ['normal','heroic','mythic']
-    hmbosses = ['Kargath Bladefist','The Butcher','Brackenspore','Tectus','Twin Ogron','Ko\'ragh','Imperator Mar\'gok']
-    brfbosses = ['Oregorger','Gruul','The Blast Furnace','Hans\'gar and Franzok','Flamebender Ka\'graz','Kromog','Beastlord Darmac','Operator Thogar','The Iron Maidens','Blackhand']
 
     def post(self):
         start = self.request.get('start')
@@ -79,63 +35,8 @@ class ProgressBuilder(webapp2.RequestHandler):
             if firstchar < start or firstchar > end:
                 continue
 
-            data = list()
-            importer.load(group.toons, data)
+            self.processGroup(group, True)
 
-            progress = dict()
-            self.parse(ProgressBuilder.difficulties, ProgressBuilder.hmbosses,
-                       data, 'Highmaul', progress)
-            self.parse(ProgressBuilder.difficulties, ProgressBuilder.brfbosses,
-                       data, 'Blackrock Foundry', progress)
-
-            # calculate the avg ilvl values from the toon data
-            group.avgilvl = 0
-            numtoons = 0
-            for toon in data:
-                if 'items' in toon:
-                    numtoons += 1
-                    group.avgilvl += toon['items']['averageItemLevel']
-
-            if numtoons != 0:
-                group.avgilvl /= numtoons
-
-            self.response.write(group.name + " data generated<br/>")
-
-            # update the entry in ndb with the new progression data for this
-            # group.  this also checks to make sure that the progress only ever
-            # increases, in case of wierdness with the data.  also generate
-            # history data while we're at it.
-            new_hist = HistoryEntry(group=group.name)
-            history_changed = False
-
-            for raid in [['brf','Blackrock Foundry'],['hm','Highmaul']]:
-                for diff in ProgressBuilder.difficulties:
-                    raid_elem = getattr(group, raid[0])
-                    old_value = getattr(raid_elem, diff)
-                    new_value = progress[raid[1]][diff]
-
-                    if (old_value < new_value):
-                        history_changed = True
-                        setattr(new_hist, raid[0]+'_'+diff, new_value-old_value)
-                        setattr(new_hist, raid[0]+'_'+diff+'_total', new_value)
-                        setattr(raid_elem, diff, new_value)
-
-            group.put()
-
-            if history_changed:
-                now = datetime.date.today()
-                q = History.query(History.date == now)
-                r = q.fetch()
-                if len(r) != 0:
-                    h = r[0]
-                else:
-                    h = History()
-                    h.date = now
-                    h.updates = list()
-                h.updates.append(new_hist)
-                h.put()
-
-            logging.info('Finished building group %s' % group.name)
         logging.info('Builder task for range %s to %s completed' % (start, end))
 
         # update the last updated for the whole dataset.  don't actually
@@ -149,7 +50,73 @@ class ProgressBuilder(webapp2.RequestHandler):
             g = r[0]
         g.put()
 
-    def parse(self, difficulties, bosses, toondata, raidname, progress):
+    def processGroup(self, group, importer, writeDB):
+        logging.info('Starting work on group %s' % group.name)
+
+        data = list()
+        importer.load(group.toons, data)
+
+        progress = dict()
+        self.parse(ProgressBuilder.difficulties, ProgressBuilder.hmbosses,
+                   data, 'Highmaul', progress, writeDB)
+        self.parse(ProgressBuilder.difficulties, ProgressBuilder.brfbosses,
+                   data, 'Blackrock Foundry', progress, writeDB)
+
+        # calculate the avg ilvl values from the toon data
+        group.avgilvl = 0
+        numtoons = 0
+        for toon in data:
+            if 'items' in toon:
+                numtoons += 1
+                group.avgilvl += toon['items']['averageItemLevel']
+
+        if numtoons != 0:
+            group.avgilvl /= numtoons
+
+        self.response.write(group.name + " data generated<br/>")
+
+        # update the entry in ndb with the new progression data for this
+        # group.  this also checks to make sure that the progress only ever
+        # increases, in case of wierdness with the data.  also generate
+        # history data while we're at it.
+        new_hist = HistoryEntry(group=group.name)
+        history_changed = False
+
+        for raid in [['brf','Blackrock Foundry'],['hm','Highmaul']]:
+            for diff in ProgressBuilder.difficulties:
+                raid_elem = getattr(group, raid[0])
+                old_value = getattr(raid_elem, diff)
+                new_value = progress[raid[1]][diff]
+
+                if (old_value < new_value):
+                    history_changed = True
+                    setattr(new_hist, raid[0]+'_'+diff, new_value-old_value)
+                    setattr(new_hist, raid[0]+'_'+diff+'_total', new_value)
+                    setattr(raid_elem, diff, new_value)
+
+        print group
+                    
+        if writeDB:
+            group.put()
+
+        if history_changed:
+            now = datetime.date.today()
+            q = History.query(History.date == now)
+            r = q.fetch()
+            if len(r) != 0:
+                h = r[0]
+            else:
+                h = History()
+                h.date = now
+                h.updates = list()
+            h.updates.append(new_hist)
+            print h
+            if writeDB:
+                h.put()
+        
+        logging.info('Finished building group %s' % group.name)
+
+    def parse(self, difficulties, bosses, toondata, raidname, progress, writeDB):
 
         progress[raidname] = dict()
 
@@ -203,7 +170,7 @@ class ProgressBuilder(webapp2.RequestHandler):
                 # with the last kill first
                 timelist = list(bossdata[boss][d]['timeset'])
                 timelist.sort(reverse=True)
-                logging.debug("%s %s" % (boss, str(timelist)))
+                print("kill times for %s %s: %s" % (d, boss, str(timelist)))
 
                 # now loop through that time list.  a kill involving 5 or more
                 # players from the group is considered a kill for the whole
@@ -211,8 +178,9 @@ class ProgressBuilder(webapp2.RequestHandler):
                 for t in timelist:
 
                     count = bossdata[boss][d]['times'].count(t)
-                    logging.debug('%s: %s' % (boss, count))
+                    print('%s: time: %d   count: %s' % (boss, t, count))
                     if count >= 5:
+                        print('*** found valid kill for %s %s at %d' % (d, boss, t))
                         bossdata[boss][d]['killed'] = True
                         bossdata[boss][d]['killtime'] = t
                         bossdata[boss][d]['killinv'] = count
@@ -220,6 +188,17 @@ class ProgressBuilder(webapp2.RequestHandler):
                         ts = datetime.datetime.fromtimestamp(t/1000)
 #                    logging.info('count for %s %s at time %s (involved %d members)' % (boss, d, ts.strftime("%Y-%m-%d %H:%M:%S"), count))
                         break
+                    
+    def get(self):
+        group = self.request.get('group')
+        logging.info('loading single %s' % group)
+        q = Group.query(Group.name == group)
+        groups = q.fetch()
+        logging.info('found %d groups with that name' % len(groups))
+        if (len(groups) != 0):
+
+            importer = wowapi.Importer()
+            self.processGroup(groups[0], importer, False)
 
 class Ranker(webapp2.RequestHandler):
 
@@ -258,139 +237,6 @@ class Ranker(webapp2.RequestHandler):
             taskqueue.add(url='/builder', params={'start':'U', 'end':'Z'})
 
         self.redirect('/rank')
-
-class Display(webapp2.RequestHandler):
-    def get(self):
-
-        q = Global.query()
-        r = q.fetch()
-        template_values = {
-            'last_updated': r[0].lastupdated,
-            'title' : 'Main'
-        }
-        template = JINJA_ENVIRONMENT.get_template('templates/header.html')
-        self.response.write(template.render(template_values))
-
-        # get the group data from the datastore, and order it in decreasing order
-        # so that further progressed teams show up first.  break ties by
-        # alphabetical order of group names
-        q = Group.query().order(-Group.brf.mythic, -Group.brf.heroic, -Group.hm.mythic, -Group.brf.normal, -Group.hm.heroic, -Group.hm.normal).order(Group.name)
-
-        groups = q.fetch()
-        for group in groups:
-            template_values = {'group' : group}
-            template = JINJA_ENVIRONMENT.get_template('templates/group.html')
-            self.response.write(template.render(template_values))
-
-        self.response.write("</div>")
-        self.response.write("<div style='clear: both;font-size: 14px;text-align:center'>Site code by Tamen - Aerie Peak(US) &#149; <a href='http://github.com/timwoj/ctrprogress'>http://github.com/timwoj/ctrprogress<a/></div><br/>")
-        self.response.write("<div style='font-size:14px;text-align:center'>This is a community project from the Threat Level Midnight raid group in the Convert to Raid family of guilds - Aerie Peak(US) and is not directly affiliated with the Convert to Raid podcast or Signals Media.</div>")
-        self.response.write('</body></html>')
-
-class DisplayText(webapp2.RequestHandler):
-    def get(self):
-
-        q = Global.query()
-        r = q.fetch()
-
-        template_values = {
-            'last_updated': r[0].lastupdated,
-            'title' : 'Text Display'
-        }
-        template = JINJA_ENVIRONMENT.get_template('templates/header.html')
-        self.response.write(template.render(template_values))
-
-        # get the group data from the datastore, and order it in decreasing order
-        # so that further progressed teams show up first.  break ties by
-        # alphabetical order of group names
-        q = Group.query().order(-Group.brf.mythic, -Group.brf.heroic, -Group.hm.mythic, -Group.brf.normal, -Group.hm.heroic, -Group.hm.normal).order(Group.name)
-
-        groups = q.fetch()
-        for group in groups:
-            self.response.write('%s (Avg ilvl: %d)<br/>' % (group.name,group.avgilvl))
-            self.writeProgress(group.brf)
-            self.writeProgress(group.hm)
-            self.response.write('<br/>')
-        self.response.write('</body></html>')
-
-    def writeProgress(self, raid):
-        self.response.write("%s: %d/%dN %d/%dH %d/%dM<br/>" %
-                        (raid.raidname, raid.normal, raid.numbosses,
-                         raid.heroic, raid.numbosses, raid.mythic,
-                         raid.numbosses))
-
-class DisplayHistory(webapp2.RequestHandler):
-    def get(self):
-        q = Global.query()
-        r = q.fetch()
-
-        lastupdated = r[0].lastupdated
-
-        template_values = {
-            'last_updated': r[0].lastupdated,
-            'title' : 'History'
-        }
-        template = JINJA_ENVIRONMENT.get_template('templates/header.html')
-        self.response.write(template.render(template_values))
-
-        # add the beginnings of the table
-        self.response.write('<table>')
-
-        # request all of the history entries, sorted in reverse order by date
-        curdate = datetime.date.today()
-        oneday = datetime.timedelta(1)
-
-        # this is a time object at 2AM AZ time (or 9AM UTC)
-        az2am = datetime.time(9)
-
-        for i in range(0,13):
-            self.response.write('<thead><tr>\n')
-            self.response.write('<th colspan="2" style="padding-top:20px">'+str(curdate)+'</th>\n')
-            self.response.write('</tr></thead>\n')
-            q = History.query(History.date == curdate)
-            r = q.fetch()
-            if (len(r) == 0):
-                # if there were no results for this date, add just a simple
-                # entry displaying nothing
-                self.response.write('<tr>\n')
-
-                self.response.write('<td colspan="2" style="text-align:center">')
-                if (i == 0):
-                    current = datetime.datetime.now()
-                    if (current > lastupdated):
-                        self.response.write('Data not parsed for today yet')
-                    else:
-                        self.response.write('No new kills for this date!')
-                else:
-                    self.response.write('No new kills for this date!')
-                self.response.write('</td>\n')
-                self.response.write('</tr>\n')
-            else:
-                # if there were results, grab the entries for the day and sort
-                # them by group name
-                updates = r[0].updates
-                updates = sorted(updates, key=lambda k: k.group)
-
-                # Grab the global data so we can populate the template with
-                # a couple of the values.
-                q2 = Global.query()
-                r2 = q2.fetch()
-
-                # now loop through the groups and output the updates in some
-                # fashion.  sort the updates BRF -> HM, then M -> H -> N
-                for u in updates:
-
-                    template_values = {
-                        'history': u,
-                        'num_brf_bosses': r2[0].num_brf_bosses,
-                        'num_hm_bosses': r2[0].num_hm_bosses,
-                    }
-                    template = JINJA_ENVIRONMENT.get_template(
-                        'templates/history.html')
-                    self.response.write(template.render(template_values))
-
-            self.response.write('</tbody>\n')
-            curdate -= oneday
 
 class Test(webapp2.RequestHandler):
     def get(self):

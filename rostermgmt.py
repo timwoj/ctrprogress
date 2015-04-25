@@ -20,8 +20,10 @@ import json
 import logging
 import os
 import operator
+import datetime
 
 import ranker
+import ctrpmodels
 
 import time
 from concurrent import futures
@@ -66,7 +68,7 @@ def worker(g, sheet):
     # Check if this group already exists in the datastore.  We don't
     # want to overwrite existing progress data for a group if we don't
     # have to.
-    query = ranker.Group.query(ranker.Group.name == g)
+    query = ctrpmodels.Group.query(ctrpmodels.Group.name == g)
     results = query.fetch(1)
 
     responsetext = ''
@@ -77,13 +79,14 @@ def worker(g, sheet):
         # there's no real reason to create groups with only that many
         # toons.
         if (len(toons) >= 5):
-            newgroup = ranker.Group(name=g)
-            newgroup.brf = ranker.Progression(raidname="Blackrock Foundry",
-                                              numbosses=10)
-            newgroup.hm = ranker.Progression(raidname="Highmaul",
-                                             numbosses=7)
+            newgroup = ctrpmodels.Group(name=g)
+            newgroup.brf = ctrpmodels.Raid()
+            newgroup.hm = ctrpmodels.Raid()
+            newgroup.hfc = ctrpmodels.Raid()
             newgroup.toons = toons
+            newgroup.rosterupdated = datetime.datetime.now()
             newgroup.put()
+            responsetext = 'Added group %s with %d toons' % (g,len(toons))
             loggroup = True
         else:
             responsetext = 'New group %s only has %d toons and was not included<br/>\n' % (g, len(toons))
@@ -92,11 +95,11 @@ def worker(g, sheet):
         # toon list.  all of the other data stays the same.
         existing = results[0]
         existing.toons = toons
+        existing.rosterupdated = datetime.datetime.now()
         existing.put()
+        responsetext = 'Updated group %s with %d toons<br/>\n' % (g,len(toons))
         loggroup = True
 
-    if loggroup:
-        responsetext = 'Stored group %s with %d toons<br/>\n' % (g,len(toons))
     t6 = time.time()
 
     logging.info('time spent getting toons for %s: %s' % (g, (t5-t4)))
@@ -108,13 +111,6 @@ def worker(g, sheet):
 class RosterBuilder(webapp2.RequestHandler):
 
     def get(self):
-
-#        json_key = json.load(open('timwojapitest-c345f9cd7499.json'))
-#        scope = ['https://spreadsheets.google.com/feeds']
-#        credentials = SignedJwtAssertionCredentials(json_key['client_email'],
-#                                                    json_key['private_key'],
-#                                                    scope)
-#        gc = gspread.authorize(credentials)
 
         path = os.path.join(os.path.split(__file__)[0],'api-auth.json')
         json_key = json.load(open(path))
@@ -138,14 +134,14 @@ class RosterBuilder(webapp2.RequestHandler):
                 groups.append(group)
         groups = sorted(groups)
         
-        logging.info('num groups: %d' % len(groups))
+        logging.info('num groups on master roster: %d' % len(groups))
         t2 = time.time()
 
         # Grab the list of groups already in the database.  Loop through and
         # delete any groups that don't exist in the list (it happens...) and
         # any groups that are now marked disbanded.  Groups listed in the
         # history will remain even if they disband.
-        query = ranker.Group.query()
+        query = ctrpmodels.Group.query()
         results = query.fetch()
         for res in results:
             if res.name not in groups:
@@ -182,20 +178,6 @@ class RosterBuilder(webapp2.RequestHandler):
                     groupcount += 1
                     tooncount += returnval[1]
         fs.clear()
-
-        # for g in groupsp2:
-        #     fs[executor.submit(worker, g, sheet)] = g
-
-        # for future in futures.as_completed(fs):
-        #     g = fs[future]
-        #     if future.exception() is not None:
-        #         logging.info("%s generated an exception: %s" % (g, future.exception()))
-        #     else:
-        #         returnval = future.result()
-        #         responses[g] = returnval[2]
-        #         if returnval[0] == True:
-        #             groupcount += 1
-        #             tooncount += returnval[1]
 
         responses = sorted(responses.items(), key=operator.itemgetter(0))
         for i in responses:

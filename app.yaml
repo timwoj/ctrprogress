@@ -20,6 +20,22 @@ handlers:
   script: main.app
   login: admin
 
+- url: /rank
+  script: main.app
+  login: admin
+
+- url: /builder
+  script: main.app
+  login: admin
+
+- url: /loadgroups
+  script: main.app
+  login: admin
+
+- url: /mergedb
+  script: main.app
+  login: admin
+
 - url: .*
   script: main.app
 
