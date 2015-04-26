@@ -83,12 +83,21 @@ class HistoryEntry(ndb.Model):
     hfc_mythic = ndb.IntegerProperty(default = 0, required = True)
     hfc_heroic = ndb.IntegerProperty(default = 0, required = True)
     hfc_normal = ndb.IntegerProperty(default = 0, required = True)
+    hfc_mythic_total = ndb.IntegerProperty(default = 0, required = True)
+    hfc_heroic_total = ndb.IntegerProperty(default = 0, required = True)
+    hfc_normal_total = ndb.IntegerProperty(default = 0, required = True)
     brf_mythic = ndb.IntegerProperty(default = 0, required = True)
     brf_heroic = ndb.IntegerProperty(default = 0, required = True)
     brf_normal = ndb.IntegerProperty(default = 0, required = True)
+    brf_mythic_total = ndb.IntegerProperty(default = 0, required = True)
+    brf_heroic_total = ndb.IntegerProperty(default = 0, required = True)
+    brf_normal_total = ndb.IntegerProperty(default = 0, required = True)
     hm_mythic = ndb.IntegerProperty(default = 0, required = True)
     hm_heroic = ndb.IntegerProperty(default = 0, required = True)
     hm_normal = ndb.IntegerProperty(default = 0, required = True)
+    hm_mythic_total = ndb.IntegerProperty(default = 0, required = True)
+    hm_heroic_total = ndb.IntegerProperty(default = 0, required = True)
+    hm_normal_total = ndb.IntegerProperty(default = 0, required = True)
 
 class History(ndb.Model):
     date = ndb.DateProperty(indexed=True)
@@ -114,6 +123,12 @@ class Mergev1tov2(webapp2.RequestHandler):
                 for boss in Constants.brfbosses:
                     newboss = Boss(name = boss)
                     group.brf.bosses.append(newboss)
+                        
+            if group.hm.bosses == None or len(group.hm.bosses) == 0:
+                group.hm.bosses = list()
+                for boss in Constants.hmbosses:
+                    newboss = Boss(name = boss)
+                    group.hm.bosses.append(newboss)
                         
             # remove obsolete fields from the data table
             if 'numbosses' in group.hm._properties:

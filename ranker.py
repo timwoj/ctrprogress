@@ -61,12 +61,8 @@ class ProgressBuilder(webapp2.RequestHandler):
         importer.load(group.toons, data)
 
         progress = dict()
-        self.parse(Constants.difficulties, Constants.hmbosses,
-                   data, Constants.hmname, progress, writeDB)
-        self.parse(Constants.difficulties, Constants.brfbosses,
-                   data, Constants.brfname, progress, writeDB)
-
-        print progress
+        self.parse(Constants.hmbosses, data, Constants.hmname, progress, writeDB)
+        self.parse(Constants.brfbosses, data, Constants.brfname, progress, writeDB)
 
         # calculate the avg ilvl values from the toon data
         group.avgilvl = 0
@@ -88,32 +84,34 @@ class ProgressBuilder(webapp2.RequestHandler):
         new_hist = ctrpmodels.HistoryEntry(group=group.name)
         history_changed = False
 
-        # This entire if statement feels like a big hack, with all of the getattr
-        # and setattr calls.  It's probably just a fact of how the data models are
-        # laid out, but it feels really messy.
+        # Loop through the raids that are being processed for this tier and
+        # build all of the points of data that are needed.  First, update which
+        # bosses have been killed for a group, then loop through the
+        # difficulties and build the killed counts and the history.
         for raid in [('brf',Constants.brfname,Constants.brfbosses),
                      ('hm',Constants.hmname,Constants.hmbosses)]:
-            for diff in Constants.difficulties:
-                raid_elem = getattr(group, raid[0])
-                old_value = getattr(raid_elem, diff)
-                new_value = progress[raid[1]][diff]['count']
 
-                if (old_value < new_value):
+            group_raid = getattr(group, raid[0])
+            data_raid = progress[raid[1]]
+
+            for group_boss in group_raid.bosses:
+                data_boss = [b for b in data_raid if b.name == group_boss.name][0]
+                if data_boss.normaldead == True:
+                    group_boss.normaldead = True
+                if data_boss.heroicdead == True:
+                    group_boss.heroicdead = True
+                if data_boss.mythicdead == True:
+                    group_boss.mythicdead = True
+
+            for d in Constants.difficulties:
+                old = getattr(group_raid, d)
+                new = len([b for b in group_raid.bosses if getattr(b, d+'dead') == True])
+                if old < new:
                     history_changed = True
-                    setattr(new_hist, raid[0]+'_'+diff, new_value-old_value)
-                    setattr(new_hist, raid[0]+'_'+diff+'_total', new_value)
-                    setattr(raid_elem, diff, new_value)
+                    setattr(new_hist, raid[0]+'_'+d, new-old)
+                    setattr(new_hist, raid[0]+'_'+d+'_total', new)
+                    setattr(group_raid, d, new)
 
-                if raid[0] == 'hm':
-                    continue    
-                    
-                for bossname in raid[2]:
-                    if progress[raid[1]][diff][bossname] == True:
-                        boss_entry = [b for b in raid_elem.bosses if b.name == bossname][0]
-                        setattr(boss_entry, diff+'dead', True)
-                    
-        print group
-                    
         if writeDB:
             group.put()
 
@@ -128,20 +126,19 @@ class ProgressBuilder(webapp2.RequestHandler):
                 h.date = now
                 h.updates = list()
             h.updates.append(new_hist)
-            print h
             if writeDB:
                 h.put()
         
         logging.info('Finished building group %s' % group.name)
 
-    def parse(self, difficulties, bosses, toondata, raidname, progress, writeDB):
+    def parse(self, bosses, toondata, raidname, progress, writeDB):
 
-        progress[raidname] = dict()
+        progress[raidname] = list()
 
         bossdata = dict()
         for boss in bosses:
             bossdata[boss] = dict()
-            for d in difficulties:
+            for d in Constants.difficulties:
                 bossdata[boss][d] = dict()
                 bossdata[boss][d]['times'] = list()
                 bossdata[boss][d]['timeset'] = set()
@@ -169,40 +166,34 @@ class ProgressBuilder(webapp2.RequestHandler):
                 # loop through each difficulty level and grab each timestamp.
                 # skip any timestamps of zero.  that means the toon never
                 # killed the boss.
-                for d in difficulties:
+                for d in Constants.difficulties:
                     if b[d+'Timestamp'] != 0:
                         bossdata[boss][d]['times'].append(b[d+'Timestamp'])
                         bossdata[boss][d]['timeset'].add(b[d+'Timestamp'])
 
         # loop back through the difficulties and bosses and build up the
         # progress data
-        for d in difficulties:
+        for boss in bosses:
 
-            progress[raidname][d] = dict()
-            progress[raidname][d]['count'] = 0
-            for boss in bosses:
+            bossobj = ctrpmodels.Boss(name = boss)
 
-                progress[raidname][d][boss] = False
+            for d in Constants.difficulties:
                 # for each boss, grab the set of unique timestamps and sort it
                 # with the last kill first
                 timelist = list(bossdata[boss][d]['timeset'])
                 timelist.sort(reverse=True)
                 print("kill times for %s %s: %s" % (d, boss, str(timelist)))
 
-                # now loop through that time list.  a kill involving 5 or more
-                # players from the group is considered a kill for the whole
-                # group and counts towards progress.
                 for t in timelist:
-
                     count = bossdata[boss][d]['times'].count(t)
                     print('%s: time: %d   count: %s' % (boss, t, count))
                     if count >= 5:
                         print('*** found valid kill for %s %s at %d' % (d, boss, t))
-                        progress[raidname][d]['count'] += 1
-                        progress[raidname][d][boss] = True
-                        ts = datetime.datetime.fromtimestamp(t/1000)
+                        setattr(bossobj, d+'dead', True)
                         break
-                    
+
+            progress[raidname].append(bossobj)
+
     def get(self):
         group = self.request.get('group')
         logging.info('loading single %s' % group)
@@ -237,7 +228,6 @@ class Ranker(webapp2.RequestHandler):
         queue = Queue()
         stats = queue.fetch_statistics()
         if stats.tasks == 0:
-            print 'nop'
             taskqueue.add(url='/builder', params={'start':'A', 'end':'B'})
             taskqueue.add(url='/builder', params={'start':'C', 'end':'E'})
             taskqueue.add(url='/builder', params={'start':'F', 'end':'G'})
@@ -259,7 +249,6 @@ class Test(webapp2.RequestHandler):
         groups = q.fetch()
 
         if len(groups) != 0:
-            print group.toons
 
             data = list()
             importer.load(group.toons, data)
