@@ -39,17 +39,17 @@ class ProgressBuilder(webapp2.RequestHandler):
             if firstchar < start or firstchar > end:
                 continue
 
-            self.processGroup(group, True)
+            self.processGroup(group, importer, True)
 
         logging.info('Builder task for range %s to %s completed' % (start, end))
 
         # update the last updated for the whole dataset.  don't actually
         # have to set the time here, the auto_now flag on the property does
         # it for us.
-        q = Global.query()
+        q = ctrpmodels.Global.query()
         r = q.fetch()
         if (len(r) == 0):
-            g = Global()
+            g = ctrpmodels.Global()
         else:
             g = r[0]
         g.put()
@@ -220,7 +220,7 @@ class Ranker(webapp2.RequestHandler):
     def post(self):
         # clear out any history older than two weeks
         twoweeksago = datetime.date.today() - datetime.timedelta(14)
-        q = History.query(History.date < twoweeksago)
+        q = ctrpmodels.History.query(ctrpmodels.History.date < twoweeksago)
         for r in q.fetch():
             r.key.delete()
 
