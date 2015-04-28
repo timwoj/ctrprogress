@@ -6,6 +6,7 @@
 # app engine.  They're here to keep the definitions out of the ranker code.
 
 import webapp2
+import datetime
 from google.appengine.ext import ndb
 
 class Constants:
@@ -56,8 +57,8 @@ class Group(ndb.Model):
     hm = ndb.StructuredProperty(Raid, required = True)
     brf = ndb.StructuredProperty(Raid, required = True)
     hfc = ndb.StructuredProperty(Raid, required = True)
-    lastupdated = ndb.DateTimeProperty(auto_now=True)
-    rosterupdated = ndb.DateTimeProperty()
+    lastupdated = ndb.DateTimeProperty()
+    rosterupdated = ndb.DateProperty()
     avgilvl = ndb.IntegerProperty(default = 0)
     
     # Query used in display.py to get a consistent set of data for both the graphical
@@ -141,5 +142,9 @@ class Mergev1tov2(webapp2.RequestHandler):
                 del group.brf._properties['raidname']
             if 'rosterupdate' in group._properties:
                 del group._properties['rosterupdate']
+
+            # set the rosterupdated field to something in the past so that they
+            # all get updated in the next pass through.
+            group.rosterupdated = datetime.datetime.strptime('20140101','%Y%m%d').date()
                 
             group.put()
