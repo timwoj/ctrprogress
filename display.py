@@ -30,10 +30,9 @@ class Display(webapp2.RequestHandler):
             template = JINJA_ENVIRONMENT.get_template('templates/group.html')
             self.response.write(template.render(template_values))
 
-        self.response.write("</div>")
-        self.response.write("<div style='clear: both;font-size: 14px;text-align:center'>Site code by Tamen - Aerie Peak(US) &#149; <a href='http://github.com/timwoj/ctrprogress'>http://github.com/timwoj/ctrprogress<a/></div><br/>")
-        self.response.write("<div style='font-size:14px;text-align:center'>This is a community project from the Threat Level Midnight raid group in the Convert to Raid family of guilds - Aerie Peak(US) and is not directly affiliated with the Convert to Raid podcast or Signals Media.</div>")
-        self.response.write('</body></html>')
+        template_values = {}
+        template = JINJA_ENVIRONMENT.get_template('templates/footer.html')
+        self.response.write(template.render(template_values))
 
 class DisplayText(webapp2.RequestHandler):
     def get(self):
@@ -58,7 +57,9 @@ class DisplayText(webapp2.RequestHandler):
             self.writeProgress(group.brf)
             self.writeProgress(group.hm)
             self.response.write('<br/>')
-        self.response.write('</body></html>')
+        template_values = {}
+        template = JINJA_ENVIRONMENT.get_template('templates/footer.html')
+        self.response.write(template.render(template_values))
 
     def writeProgress(self, raid):
         self.response.write("%s: %d/%dN %d/%dH %d/%dM<br/>" %
@@ -94,7 +95,7 @@ class DisplayHistory(webapp2.RequestHandler):
             self.response.write('<thead><tr>\n')
             self.response.write('<th colspan="2" style="padding-top:20px">'+str(curdate)+'</th>\n')
             self.response.write('</tr></thead>\n')
-            q = History.query(History.date == curdate)
+            q = ctrpmodels.History.query(ctrpmodels.History.date == curdate)
             r = q.fetch()
             if (len(r) == 0):
                 # if there were no results for this date, add just a simple
@@ -129,8 +130,8 @@ class DisplayHistory(webapp2.RequestHandler):
 
                     template_values = {
                         'history': u,
-                        'num_brf_bosses': r2[0].num_brf_bosses,
-                        'num_hm_bosses': r2[0].num_hm_bosses,
+                        'num_brf_bosses': ctrpmodels.Constants.num_brf_bosses,
+                        'num_hm_bosses': ctrpmodels.Constants.num_hm_bosses,
                     }
                     template = JINJA_ENVIRONMENT.get_template(
                         'templates/history.html')
@@ -139,3 +140,7 @@ class DisplayHistory(webapp2.RequestHandler):
             self.response.write('</tbody>\n')
             curdate -= oneday
 
+        self.response.write('</table>\n')
+        template_values = {}
+        template = JINJA_ENVIRONMENT.get_template('templates/footer.html')
+        self.response.write(template.render(template_values))
