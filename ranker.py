@@ -68,7 +68,9 @@ class ProgressBuilder(webapp2.RequestHandler):
         group.avgilvl = 0
         numtoons = 0
         for toon in data:
-            if 'items' in toon:
+            # ignore toons that we didn't get data back for or for toons less than
+            # level 100
+            if 'items' in toon and toon['level'] == 100:
                 numtoons += 1
                 group.avgilvl += toon['items']['averageItemLevel']
 
@@ -194,7 +196,7 @@ class ProgressBuilder(webapp2.RequestHandler):
 
             progress[raidname].append(bossobj)
 
-    def get(self):
+    def loadone(self):
         group = self.request.get('group')
         logging.info('loading single %s' % group)
         q = Group.query(Group.name == group)

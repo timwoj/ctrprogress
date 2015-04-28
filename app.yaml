@@ -15,6 +15,9 @@ handlers:
 - url: /howitworks\.html
   static_files: templates/howitworks.html
   upload: templates/howitworks\.html
+- url: /tier17\.html
+  static_files: templates/tier17.html
+  upload: templates/tier17\.html
 
 - url: /startrank
   script: main.app
