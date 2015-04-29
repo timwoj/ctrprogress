@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import time
+import ctrpmodels
 
 from google.appengine.ext import ndb
 from google.appengine.api import urlfetch
@@ -59,8 +60,8 @@ class Importer:
         for d in data:
             try:
                 d['rpc'].wait()
-            except:
-                logging.error('Waiting for rpc failed')
+            except Exception as e:
+                logging.error('Waiting for rpc failed: %s', str(e))
         end = time.time()
         
         logging.info("Time spent retrieving data: %f seconds" % (end-start))
@@ -109,7 +110,7 @@ class Importer:
 
         # we get all of the data here, but we want to filter out just the raids
         # we care about so that it's not so much data returned from the importer
-        validraids = [ctrpmodels.hmname,ctrpmodels.brfname]
+        validraids = [ctrpmodels.Constants.hmname,ctrpmodels.Constants.brfname]
         if toondata['progression'] != None:
             toondata['progression']['raids'] = [r for r in toondata['progression']['raids'] if r['name'] in validraids]
 
