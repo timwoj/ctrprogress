@@ -48,42 +48,44 @@ class Display(webapp2.RequestHandler):
         self.response.write('var tooltips = {};\n')
         
         groups = ctrpmodels.Group.query_for_t17_display()
-        for group in groups:
-            normaltext = ""
-            heroictext = ""
-            mythictext = ""
-            brfbosses = []
-            for boss in group.brf.bosses:
-                brfbosses.append((boss.name, boss.normaldead, boss.heroicdead, boss.mythicdead))
-            index_dict = {item: index for index, item in enumerate(ctrpmodels.Constants.brfbosses)}
-            brfbosses.sort(key=lambda t:index_dict[t[0]])
-            print brfbosses
-
-            for boss in brfbosses:
-                if boss[1]:
-                    normaltext += "<div class='bossdead'>"+boss[0]+"</div>";
-                else:
-                    normaltext += "<div class='bossalive'>"+boss[0]+"</div>";
-                if boss[2]:
-                    heroictext += "<div class='bossdead'>"+boss[0]+"</div>";
-                else:
-                    heroictext += "<div class='bossalive'>"+boss[0]+"</div>";
-                if boss[3]:
-                    mythictext += "<div class='bossdead'>"+boss[0]+"</div>";
-                else:
-                    mythictext += "<div class='bossalive'>"+boss[0]+"</div>";
-
-            print normaltext
+        for raid in ['hm','brf']:
+            for group in groups:
+                normaltext = ""
+                heroictext = ""
+                mythictext = ""
+                bosses = []
+                groupraid = getattr(group,raid)
+                raidbosses = getattr(ctrpmodels.Constants,raid+'bosses')
                 
-            template_values = {
-                'name': group.name,
-                'raid': 'brf',
-                'normaltext': normaltext,
-                'heroictext': heroictext,
-                'mythictext': mythictext,
-            }
-            template = JINJA_ENVIRONMENT.get_template('templates/group-tooltip.js')
-            self.response.write(template.render(template_values))
+                for boss in groupraid.bosses:
+                    bosses.append((boss.name, boss.normaldead, boss.heroicdead, boss.mythicdead))
+                index_dict = {item: index for index, item in enumerate(raidbosses)}
+                bosses.sort(key=lambda t:index_dict[t[0]])
+                print bosses
+
+                for boss in bosses:
+                    if boss[1]:
+                        normaltext += "<div class='bossdead'>"+boss[0]+"</div>";
+                    else:
+                        normaltext += "<div class='bossalive'>"+boss[0]+"</div>";
+                    if boss[2]:
+                        heroictext += "<div class='bossdead'>"+boss[0]+"</div>";
+                    else:
+                        heroictext += "<div class='bossalive'>"+boss[0]+"</div>";
+                    if boss[3]:
+                        mythictext += "<div class='bossdead'>"+boss[0]+"</div>";
+                    else:
+                        mythictext += "<div class='bossalive'>"+boss[0]+"</div>";
+
+                template_values = {
+                    'name': group.name,
+                    'raid': raid,
+                    'normaltext': normaltext,
+                    'heroictext': heroictext,
+                    'mythictext': mythictext,
+                }
+                template = JINJA_ENVIRONMENT.get_template('templates/group-tooltip.js')
+                self.response.write(template.render(template_values))
                 
         self.response.write('\n');
         self.response.write('var element = $(this);\n')
