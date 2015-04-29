@@ -38,6 +38,61 @@ class Display(webapp2.RequestHandler):
         template = JINJA_ENVIRONMENT.get_template('templates/footer.html')
         self.response.write(template.render(template_values))
 
+    def build_tooltips(self):
+
+        self.response.content_type = 'application/javascript'
+        self.response.write('$(function() {\n')
+        self.response.write('$(document).tooltip({\n')
+        self.response.write('items: "[ttid]",\n')
+        self.response.write('content: function() {\n')
+        self.response.write('var tooltips = {};\n')
+        
+        groups = ctrpmodels.Group.query_for_t17_display()
+        for group in groups:
+            normaltext = ""
+            heroictext = ""
+            mythictext = ""
+            brfbosses = []
+            for boss in group.brf.bosses:
+                brfbosses.append((boss.name, boss.normaldead, boss.heroicdead, boss.mythicdead))
+            index_dict = {item: index for index, item in enumerate(ctrpmodels.Constants.brfbosses)}
+            brfbosses.sort(key=lambda t:index_dict[t[0]])
+            print brfbosses
+
+            for boss in brfbosses:
+                if boss[1]:
+                    normaltext += "<span style='color:red'>"+boss[0]+"</span><br/>";
+                else:
+                    normaltext += "<span style='color:green'>"+boss[0]+"</span><br/>";
+                if boss[2]:
+                    heroictext += "<span style='color:red'>"+boss[0]+"</span><br/>";
+                else:
+                    heroictext += "<span style='color:green'>"+boss[0]+"</span><br/>";
+                if boss[3]:
+                    mythictext += "<span style='color:red'>"+boss[0]+"</span><br/>";
+                else:
+                    mythictext += "<span style='color:green'>"+boss[0]+"</span><br/>";
+
+            print normaltext
+                
+            template_values = {
+                'name': group.name,
+                'raid': 'brf',
+                'normaltext': normaltext,
+                'heroictext': heroictext,
+                'mythictext': mythictext,
+            }
+            template = JINJA_ENVIRONMENT.get_template('templates/group-tooltip.js')
+            self.response.write(template.render(template_values))
+                
+            break
+        self.response.write('\n');
+        self.response.write('var element = $(this);\n')
+        self.response.write('var ttid = element.attr("ttid");\n')
+        self.response.write('return tooltips[ttid];\n')
+        self.response.write('}});\n')
+        self.response.write('});\n')
+            
 class DisplayText(webapp2.RequestHandler):
     def get(self):
 
