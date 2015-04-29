@@ -89,6 +89,7 @@ def worker(g, sheet):
             newgroup.put()
             responsetext = 'Added group %s with %d toons' % (g,len(toons))
             loggroup = 'Added'
+            newgroup = None
         else:
             responsetext = 'New group %s only has %d toons and was not included' % (g, len(toons))
             loggroup = 'Skipped'
@@ -99,6 +100,7 @@ def worker(g, sheet):
         existing.toons = toons
         existing.rosterupdated = datetime.date.today()
         existing.put()
+        existing = None
         responsetext = 'Updated group %s with %d toons' % (g,len(toons))
         loggroup = 'Updated'
 
@@ -107,7 +109,8 @@ def worker(g, sheet):
     logging.info('time spent getting toons for %s: %s' % (g, (t5-t4)))
     logging.info('time spent updating db for %s: %s' % (g, (t6-t5)))
 
-    gc.collect()
+    collected = gc.collect()
+    print collected
     return (loggroup, len(toons), responsetext)
 
 class RosterBuilder(webapp2.RequestHandler):
@@ -142,9 +145,6 @@ class RosterBuilder(webapp2.RequestHandler):
         # sort the lists by the names in the group list.  This is a slick use
         # of zip.
         groupnames, lastupdates = (list(t) for t in zip(*sorted(zip(groupnames,lastupdates))))
-
-        print groupnames
-        print lastupdates
 
         print('num groups on dashboard: %d' % len(groupnames))
 
@@ -194,7 +194,7 @@ class RosterBuilder(webapp2.RequestHandler):
         # rosters in parallel.  due to the memory limits on GAE, we only allow
         # 25 threads at a time.  this comes *really* close to hitting both the
         # limit on page-load time and the limit on memory.
-        executor = futures.ThreadPoolExecutor(max_workers=25)
+        executor = futures.ThreadPoolExecutor(max_workers=15)
 
         fs = dict()
         for g in groupnames:
@@ -211,8 +211,6 @@ class RosterBuilder(webapp2.RequestHandler):
                     groupcount += 1
                     tooncount += returnval[1]
         fs.clear()
-
-        print responses
 
         self.response.write('<h3>New Raid Groups</h3>')
         added = sorted([x for x in responses if x[0] == 'Added'], key=lambda tup: tup[1])

@@ -40,6 +40,7 @@ class ProgressBuilder(webapp2.RequestHandler):
                 continue
 
             self.processGroup(group, importer, True)
+            break
 
         logging.info('Builder task for range %s to %s completed' % (start, end))
 
@@ -81,10 +82,9 @@ class ProgressBuilder(webapp2.RequestHandler):
 
         # update the entry in ndb with the new progression data for this
         # group.  this also checks to make sure that the progress only ever
-        # increases, in case of wierdness with the data.  also generate
+        # increases, in case of weirdness with the data.  also generate
         # history data while we're at it.
-        new_hist = ctrpmodels.HistoryEntry(group=group.name)
-        history_changed = False
+        new_hist = None
 
         # Loop through the raids that are being processed for this tier and
         # build all of the points of data that are needed.  First, update which
@@ -109,7 +109,8 @@ class ProgressBuilder(webapp2.RequestHandler):
                 old = getattr(group_raid, d)
                 new = len([b for b in group_raid.bosses if getattr(b, d+'dead') == True])
                 if old < new:
-                    history_changed = True
+                    if (new_hist == None):
+                        new_hist = ctrpmodels.HistoryEntry(group=group.name)
                     setattr(new_hist, raid[0]+'_'+d, new-old)
                     setattr(new_hist, raid[0]+'_'+d+'_total', new)
                     setattr(group_raid, d, new)
@@ -117,7 +118,7 @@ class ProgressBuilder(webapp2.RequestHandler):
         if writeDB:
             group.put()
 
-        if history_changed:
+        if new_hist != None:
             now = datetime.date.today()
             q = ctrpmodels.History.query(ctrpmodels.History.date == now)
             r = q.fetch()
@@ -130,6 +131,9 @@ class ProgressBuilder(webapp2.RequestHandler):
             h.updates.append(new_hist)
             if writeDB:
                 h.put()
+
+            h = None
+            new_hist = None
         
         logging.info('Finished building group %s' % group.name)
 
@@ -184,18 +188,18 @@ class ProgressBuilder(webapp2.RequestHandler):
                 # with the last kill first
                 timelist = list(bossdata[boss][d]['timeset'])
                 timelist.sort(reverse=True)
-                print("kill times for %s %s: %s" % (d, boss, str(timelist)))
+                logging.info("kill times for %s %s: %s" % (d, boss, str(timelist)))
 
                 for t in timelist:
                     count = bossdata[boss][d]['times'].count(t)
-                    print('%s: time: %d   count: %s' % (boss, t, count))
+                    logging.info('%s: time: %d   count: %s' % (boss, t, count))
                     if count >= 5:
-                        print('*** found valid kill for %s %s at %d' % (d, boss, t))
+                        logging.info('*** found valid kill for %s %s at %d' % (d, boss, t))
                         setattr(bossobj, d+'dead', True)
                         break
 
             progress[raidname].append(bossobj)
-
+            
     def loadone(self):
         group = self.request.get('group')
         logging.info('loading single %s' % group)
@@ -230,16 +234,16 @@ class Ranker(webapp2.RequestHandler):
         queue = Queue()
         stats = queue.fetch_statistics()
         if stats.tasks == 0:
-            taskqueue.add(url='/builder', params={'start':'A', 'end':'B'})
-            taskqueue.add(url='/builder', params={'start':'C', 'end':'E'})
-            taskqueue.add(url='/builder', params={'start':'F', 'end':'G'})
-            taskqueue.add(url='/builder', params={'start':'H', 'end':'H'})
-            taskqueue.add(url='/builder', params={'start':'I', 'end':'M'})
-            taskqueue.add(url='/builder', params={'start':'N', 'end':'O'})
-            taskqueue.add(url='/builder', params={'start':'P', 'end':'R'})
-            taskqueue.add(url='/builder', params={'start':'S', 'end':'S'})
+            #taskqueue.add(url='/builder', params={'start':'A', 'end':'B'})
+            #taskqueue.add(url='/builder', params={'start':'C', 'end':'E'})
+            #taskqueue.add(url='/builder', params={'start':'F', 'end':'G'})
+            #taskqueue.add(url='/builder', params={'start':'H', 'end':'H'})
+            #taskqueue.add(url='/builder', params={'start':'I', 'end':'M'})
+            #taskqueue.add(url='/builder', params={'start':'N', 'end':'O'})
+            #taskqueue.add(url='/builder', params={'start':'P', 'end':'R'})
+            #taskqueue.add(url='/builder', params={'start':'S', 'end':'S'})
             taskqueue.add(url='/builder', params={'start':'T', 'end':'T'})
-            taskqueue.add(url='/builder', params={'start':'U', 'end':'Z'})
+            #taskqueue.add(url='/builder', params={'start':'U', 'end':'Z'})
 
         self.redirect('/rank')
 
@@ -261,6 +265,6 @@ class Test(webapp2.RequestHandler):
                        data, 'Highmaul', progress)
             rank.parse(Constants.difficulties, Constants.brfbosses,
                        data, 'Blackrock Foundry', progress)
-            print "Finished parsing data"
+            logging.info("Finished parsing data")
 
-            print progress
+            logging.info(progress)

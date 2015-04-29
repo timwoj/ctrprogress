@@ -61,17 +61,17 @@ class Display(webapp2.RequestHandler):
 
             for boss in brfbosses:
                 if boss[1]:
-                    normaltext += "<span style='color:red'>"+boss[0]+"</span><br/>";
+                    normaltext += "<div class='bossdead'>"+boss[0]+"</div>";
                 else:
-                    normaltext += "<span style='color:green'>"+boss[0]+"</span><br/>";
+                    normaltext += "<div class='bossalive'>"+boss[0]+"</div>";
                 if boss[2]:
-                    heroictext += "<span style='color:red'>"+boss[0]+"</span><br/>";
+                    heroictext += "<div class='bossdead'>"+boss[0]+"</div>";
                 else:
-                    heroictext += "<span style='color:green'>"+boss[0]+"</span><br/>";
+                    heroictext += "<div class='bossalive'>"+boss[0]+"</div>";
                 if boss[3]:
-                    mythictext += "<span style='color:red'>"+boss[0]+"</span><br/>";
+                    mythictext += "<div class='bossdead'>"+boss[0]+"</div>";
                 else:
-                    mythictext += "<span style='color:green'>"+boss[0]+"</span><br/>";
+                    mythictext += "<div class='bossalive'>"+boss[0]+"</div>";
 
             print normaltext
                 
@@ -85,7 +85,6 @@ class Display(webapp2.RequestHandler):
             template = JINJA_ENVIRONMENT.get_template('templates/group-tooltip.js')
             self.response.write(template.render(template_values))
                 
-            break
         self.response.write('\n');
         self.response.write('var element = $(this);\n')
         self.response.write('var ttid = element.attr("ttid");\n')

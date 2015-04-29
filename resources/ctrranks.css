@@ -1,6 +1,6 @@
 @font-face {
     font-family: quadrata;
-    src: url('../resources/FrizQuadrataStd.otf')
+    src: url('/resources/FrizQuadrataStd.otf')
 }
 
 .brfheaderchiclet {
@@ -73,4 +73,21 @@
     color:white;
     font-family:quadrata;
     font-size:20px;
+}
+
+.ui-tooltip {
+    background:#303030;
+    color:white;
+}
+
+.bossdead {
+    font-family:quadrata;
+    font-size:14px;
+    text-decoration: line-through;
+    color:#A0A0A0
+}
+
+.bossalive{
+    font-family:quadrata;
+    font-size:14px;
 }
