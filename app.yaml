@@ -4,6 +4,8 @@ runtime: python27
 api_version: 1
 threadsafe: yes
 
+default_expiration: "2d"
+
 handlers:
 - url: /favicon\.ico
   static_files: favicon.ico
@@ -13,6 +15,12 @@ handlers:
   static_files: resources/FrizQuadrataStd.otf
   upload: resources/FrizQuadrataStd.otf
   mime_type: application/x-font-otf
+  expiration: 100d
+
+- url: /resources/(.*\.png)$
+  static_files: resources/\1
+  upload: resources/.*\.png$
+  expiration: 100d
 
 - url: /resources
   static_dir: resources
