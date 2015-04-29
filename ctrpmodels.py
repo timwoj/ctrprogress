@@ -66,7 +66,6 @@ class Group(ndb.Model):
     @classmethod
     def query_for_t17_display(self):
         q = self.query().order(-Group.brf.mythic, -Group.brf.heroic, -Group.hm.mythic, -Group.brf.normal, -Group.hm.heroic, -Group.hm.normal).order(Group.name)
-        print q.fetch()
         return q.fetch()
 
     # Query used in display.py to get a consistent set of data for both the graphical

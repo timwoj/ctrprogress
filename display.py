@@ -4,9 +4,13 @@
 import webapp2,jinja2,os,datetime
 import ctrpmodels
 
+def normalize(groupname):
+    return groupname.lower().replace('\'','').replace(' ','-')
+
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
     extensions=['jinja2.ext.autoescape'])
+JINJA_ENVIRONMENT.filters['normalize'] = normalize
 
 class Display(webapp2.RequestHandler):
     def get(self):
@@ -20,15 +24,15 @@ class Display(webapp2.RequestHandler):
         template = JINJA_ENVIRONMENT.get_template('templates/header.html')
         self.response.write(template.render(template_values))
 
-        # get the group data from the datastore, and order it in decreasing order
-        # so that further progressed teams show up first.  break ties by
-        # alphabetical order of group names
-        groups = ctrpmodels.Group.query_for_t17_display()
+        self.response.write('<table>\n')
 
+        groups = ctrpmodels.Group.query_for_t17_display()
         for group in groups:
             template_values = {'group' : group}
             template = JINJA_ENVIRONMENT.get_template('templates/group.html')
             self.response.write(template.render(template_values))
+
+        self.response.write('</table>\n')
 
         template_values = {}
         template = JINJA_ENVIRONMENT.get_template('templates/footer.html')
