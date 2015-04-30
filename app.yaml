@@ -4,10 +4,23 @@ runtime: python27
 api_version: 1
 threadsafe: yes
 
+default_expiration: "2d"
+
 handlers:
 - url: /favicon\.ico
   static_files: favicon.ico
   upload: favicon\.ico
+
+- url: /resources/FrizQuadrataStd.otf
+  static_files: resources/FrizQuadrataStd.otf
+  upload: resources/FrizQuadrataStd.otf
+  mime_type: application/x-font-otf
+  expiration: 100d
+
+- url: /resources/(.*\.png)$
+  static_files: resources/\1
+  upload: resources/.*\.png$
+  expiration: 100d
 
 - url: /resources
   static_dir: resources
@@ -19,22 +32,18 @@ handlers:
 - url: /startrank
   script: main.app
   login: admin
-  auth_fail_action: unauthorized
 
 - url: /rank
   script: main.app
   login: admin
-  auth_fail_action: unauthorized
 
 - url: /builder
   script: main.app
   login: admin
-  auth_fail_action: unauthorized
 
 - url: /loadgroups
   script: main.app
   login: admin
-  auth_fail_action: unauthorized
 
 - url: .*
   script: main.app

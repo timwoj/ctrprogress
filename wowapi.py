@@ -59,8 +59,8 @@ class Importer:
         for d in data:
             try:
                 d['rpc'].wait()
-            except:
-                logging.error('Waiting for rpc failed')
+            except Exception as e:
+                logging.error('Waiting for rpc failed: %s' % str(e))
         end = time.time()
         
         logging.info("Time spent retrieving data: %f seconds" % (end-start))
