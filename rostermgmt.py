@@ -18,9 +18,7 @@ import webapp2
 import json
 import logging
 import os
-import operator
 import datetime
-import traceback
 
 # need this stuff for the google data API
 try:
@@ -33,7 +31,10 @@ import atom.service
 import gdata.spreadsheet
 import atom
 
-import ctrpmodels
+from ctrpmodels import Constants
+from ctrpmodels import Group
+from ctrpmodels import Raid
+from ctrpmodels import Boss
 
 import time
 from concurrent import futures
@@ -88,7 +89,7 @@ def worker(g, feed, client, curr_key):
     # Check if this group already exists in the datastore.  We don't
     # want to overwrite existing progress data for a group if we don't
     # have to.
-    query = ctrpmodels.Group.query(ctrpmodels.Group.name == g)
+    query = Group.query(Group.name == g)
     results = query.fetch(1)
 
     responsetext = ''
@@ -99,16 +100,31 @@ def worker(g, feed, client, curr_key):
         # there's no real reason to create groups with only that many
         # toons.
         if (len(toons) >= 5):
-            newgroup = ctrpmodels.Group(name=g)
-            newgroup.brf = ctrpmodels.Raid()
-            newgroup.hm = ctrpmodels.Raid()
-            newgroup.hfc = ctrpmodels.Raid()
+            newgroup = Group(name=g)
+            newgroup.brf = Raid()
+            newgroup.brf.bosses = list()
+            for boss in Constants.brfbosses:
+                newboss = Boss(name = boss)
+                newgroup.brf.bosses.append(newboss)
+            
+            newgroup.hm = Raid()
+            newgroup.hm.bosses = list()
+            for boss in Constants.hmbosses:
+                newboss = Boss(name = boss)
+                newgroup.hm.bosses.append(newboss)
+            
+            newgroup.hfc = Raid()
+            newgroup.hfc.bosses = list()
+            for boss in Constants.hfcbosses:
+                newboss = Boss(name = boss)
+                newgroup.hfc.bosses.append(newboss)
+
             newgroup.toons = toons
             newgroup.rosterupdated = datetime.date.today()
+                        
             newgroup.put()
             responsetext = 'Added group %s with %d toons' % (g,len(toons))
             loggroup = 'Added'
-            newgroup = None
         else:
             responsetext = 'New group %s only has %d toons and was not included' % (g, len(toons))
             loggroup = 'Skipped'
@@ -119,7 +135,6 @@ def worker(g, feed, client, curr_key):
         existing.toons = toons
         existing.rosterupdated = datetime.date.today()
         existing.put()
-        existing = None
         responsetext = 'Updated group %s with %d toons' % (g,len(toons))
         loggroup = 'Updated'
 
@@ -147,27 +162,24 @@ class RosterBuilder(webapp2.RequestHandler):
         logging.info('logged in, grabbing main sheet')
 
         # Open the main roster feed
-        try:
-            roster_sheet_key = '1tvpsPzZCFupJkTT1y7RmMkuh5VsjBiiA7FvYruJbTtw'
-            feed = gd_client.GetWorksheetsFeed(roster_sheet_key)
-            
-            t1 = time.time()
-            logging.info('getting group names from dashboard')
-            
-            groupnames = list()
-            lastupdates = list()
-            
-            # Grab various columns from the DASHBOARD sheet on the spreadsheet, but
-            # ignore any groups that are marked as Disbanded.  This is better than
-            # looping back through the data again to remove them.
-            dashboard_id = getsheetID(feed, 'DASHBOARD')
-            dashboard = gd_client.GetListFeed(roster_sheet_key, dashboard_id)
-            for entry in dashboard.entry:
-                if entry.custom['teamstatus'].text != 'Disbanded':
-                    groupnames.append(entry.custom['teamname'].text)
-                    lastupdates.append(entry.custom['lastrosterupdate'].text)
-        except:
-            logging.error(traceback.format_exc())
+        roster_sheet_key = '1tvpsPzZCFupJkTT1y7RmMkuh5VsjBiiA7FvYruJbTtw'
+        feed = gd_client.GetWorksheetsFeed(roster_sheet_key)
+      
+        t1 = time.time()
+        logging.info('getting group names from dashboard')
+        
+        groupnames = list()
+        lastupdates = list()
+        
+        # Grab various columns from the DASHBOARD sheet on the spreadsheet, but
+        # ignore any groups that are marked as Disbanded.  This is better than
+        # looping back through the data again to remove them.
+        dashboard_id = getsheetID(feed, 'DASHBOARD')
+        dashboard = gd_client.GetListFeed(roster_sheet_key, dashboard_id)
+        for entry in dashboard.entry:
+            if entry.custom['teamstatus'].text != 'Disbanded':
+                groupnames.append(entry.custom['teamname'].text)
+                lastupdates.append(entry.custom['lastrosterupdate'].text)
 
         # sort the lists by the names in the group list.  This is a slick use
         # of zip.  it works by zipping the two lists into a single list of
@@ -189,7 +201,7 @@ class RosterBuilder(webapp2.RequestHandler):
         # history will remain even if they disband.  While we're looping, also
         # remove any groups from the list to be processed that haven't had
         # a roster update since the last time we did this.
-        query = ctrpmodels.Group.query().order(ctrpmodels.Group.name)
+        query = Group.query().order(Group.name)
         results = query.fetch()
         for res in results:
             if res.name not in groupnames:
@@ -253,7 +265,7 @@ class RosterBuilder(webapp2.RequestHandler):
 
         self.response.write('<h3>Disbanded/Removed Raid Groups</h3>')
         removed = sorted([x for x in responses if x[0] == 'Removed'], key=lambda tup: tup[1])
-        for i in updated:
+        for i in removed:
             self.response.write('%s<br/>' % i[1])
 
         self.response.write('<h3>Raid groups skipped due to Size</h3>')
