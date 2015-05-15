@@ -15,12 +15,23 @@
 # limitations under the License.
 #
 import webapp2
-import gspread
 import json
 import logging
 import os
 import operator
 import datetime
+import traceback
+
+# need this stuff for the google data API
+try:
+  from xml.etree import ElementTree
+except ImportError:
+  from elementtree import ElementTree
+import gdata.spreadsheet.service
+import gdata.service
+import atom.service
+import gdata.spreadsheet
+import atom
 
 import ctrpmodels
 
@@ -33,30 +44,38 @@ import gc
 from google.appengine.api import urlfetch
 urlfetch.set_default_fetch_deadline(20);
 
-def worker(g, sheet):
+# Grabs the ID for the worksheet from the roster spreadsheet with the
+# matching group name.
+def getsheetID(feed, name):
+    sheet = [x for x in feed.entry if x.title.text.lower() == name.lower()][0]
+    id_parts = sheet.id.text.split('/')
+    return id_parts[len(id_parts) - 1]
+
+def worker(g, feed, client, curr_key):
     t4 = time.time()
     logging.info('working on group %s' % g)
-    groupsheet = sheet.worksheet(g)
-    data = groupsheet.get_all_values()
+    sheetID = getsheetID(feed, g)
+    sheet = client.GetListFeed(curr_key, sheetID)
 
     # build up a list of toons for the group from the spreadsheet
     toons = list()
 
     # each tr is a row in the table.  we care about columns 4-6, which are
     # the character name, the server, and the role.
-    for i,row in enumerate(data):
-        # skip the first row which is a header row
-        if i == 0:
+    for i,entry in enumerate(sheet.entry):
+
+        # get the text from the cells for this row that we care about,
+        # assuming none of them are empty
+        if entry.custom['charactername'].text == None or entry.custom['server'].text == None:
             continue
 
-        # get the text of the cells of the row and skip any rows where
-        # column 4 is a non-breaking space.
-        toon = row[3].encode('utf-8','ignore')
+        toon = entry.custom['charactername'].text.encode('utf-8','ignore')
         if len(toon) == 0:
             continue
 
-        if row[4] != 'Aerie Peak':
-            toon += '/%s' % row[4].encode('utf-8','ignore')
+        realm = entry.custom['server'].text.encode('utf-8','ignore')
+        if realm != 'Aerie Peak':
+            toon += '/%s' % realm
         else:
             toon += '/aerie-peak'
 
@@ -109,8 +128,6 @@ def worker(g, sheet):
     logging.info('time spent getting toons for %s: %s' % (g, (t5-t4)))
     logging.info('time spent updating db for %s: %s' % (g, (t6-t5)))
 
-    collected = gc.collect()
-    print collected
     return (loggroup, len(toons), responsetext)
 
 class RosterBuilder(webapp2.RequestHandler):
@@ -121,29 +138,41 @@ class RosterBuilder(webapp2.RequestHandler):
         
         path = os.path.join(os.path.split(__file__)[0],'api-auth.json')
         json_key = json.load(open(path))
-        gc = gspread.login(json_key['email'], json_key['password'])
+
+        gd_client = gdata.spreadsheet.service.SpreadsheetsService()
+        gd_client.email = json_key['email']
+        gd_client.password = json_key['password']
+        gd_client.ProgrammaticLogin()
+
         logging.info('logged in, grabbing main sheet')
 
-        sheet = gc.open_by_key('1tvpsPzZCFupJkTT1y7RmMkuh5VsjBiiA7FvYruJbTtw')
-
-        t1 = time.time()
-        logging.info('getting group names from dashboard')
-
-        # Grab various columns from the DASHBOARD sheet on the spreadsheet, but
-        # ignore any groups that are marked as Disbanded.  This is better than
-        # looping back through the data again to remove them.
-        dashboard = sheet.worksheet('DASHBOARD')
-        dashboard_data = dashboard.get_all_values()
-        groupnames = [row[3] for row in dashboard_data if row[3] != '' and row[8] != 'Disbanded']
-        lastupdates = [row[10] for row in dashboard_data if row[10] != '' and row[8] != 'Disbanded']
-
-        # delete the first row from all of those lists because it's the header
-        # row and it's meaningless
-        del groupnames[0]
-        del lastupdates[0]
+        # Open the main roster feed
+        try:
+            roster_sheet_key = '1tvpsPzZCFupJkTT1y7RmMkuh5VsjBiiA7FvYruJbTtw'
+            feed = gd_client.GetWorksheetsFeed(roster_sheet_key)
+            
+            t1 = time.time()
+            logging.info('getting group names from dashboard')
+            
+            groupnames = list()
+            lastupdates = list()
+            
+            # Grab various columns from the DASHBOARD sheet on the spreadsheet, but
+            # ignore any groups that are marked as Disbanded.  This is better than
+            # looping back through the data again to remove them.
+            dashboard_id = getsheetID(feed, 'DASHBOARD')
+            dashboard = gd_client.GetListFeed(roster_sheet_key, dashboard_id)
+            for entry in dashboard.entry:
+                if entry.custom['teamstatus'].text != 'Disbanded':
+                    groupnames.append(entry.custom['teamname'].text)
+                    lastupdates.append(entry.custom['lastrosterupdate'].text)
+        except:
+            logging.error(traceback.format_exc())
 
         # sort the lists by the names in the group list.  This is a slick use
-        # of zip.
+        # of zip.  it works by zipping the two lists into a single list of
+        # tuples containing the elements, sorting them, then unzipping them
+        # back into separate lists again.
         groupnames, lastupdates = (list(t) for t in zip(*sorted(zip(groupnames,lastupdates))))
 
         print('num groups on dashboard: %d' % len(groupnames))
@@ -198,7 +227,7 @@ class RosterBuilder(webapp2.RequestHandler):
 
         fs = dict()
         for g in groupnames:
-            fs[executor.submit(worker, g, sheet)] = g
+            fs[executor.submit(worker, g, feed, gd_client, roster_sheet_key)] = g
 
         for future in futures.as_completed(fs):
             g = fs[future]
