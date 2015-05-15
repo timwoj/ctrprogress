@@ -15,11 +15,20 @@
 # limitations under the License.
 #
 import webapp2
-import gspread
 import json
 import logging
 import os
-import operator
+
+# need this stuff for the google data API
+try:
+  from xml.etree import ElementTree
+except ImportError:
+  from elementtree import ElementTree
+import gdata.spreadsheet.service
+import gdata.service
+import atom.service
+import gdata.spreadsheet
+import atom
 
 import ranker
 
@@ -32,30 +41,39 @@ import gc
 from google.appengine.api import urlfetch
 urlfetch.set_default_fetch_deadline(20);
 
-def worker(g, sheet):
+# Grabs the ID for the worksheet from the roster spreadsheet with the
+# matching group name.
+def getsheetID(feed, name):
+    sheet = [x for x in feed.entry if x.title.text.lower() == name.lower()][0]
+    id_parts = sheet.id.text.split('/')
+    return id_parts[len(id_parts) - 1]
+
+def worker(g, feed, client, curr_key):
     t4 = time.time()
     logging.info('working on group %s' % g)
-    groupsheet = sheet.worksheet(g)
-    data = groupsheet.get_all_values()
+    sheetID = getsheetID(feed, g)
+    sheet = client.GetListFeed(curr_key, sheetID)
 
     # build up a list of toons for the group from the spreadsheet
     toons = list()
 
     # each tr is a row in the table.  we care about columns 4-6, which are
     # the character name, the server, and the role.
-    for i,row in enumerate(data):
-        # skip the first row which is a header row
-        if i == 0:
+    for i,entry in enumerate(sheet.entry):
+        # get the text from the cells for this row that we care about,
+        # assuming none of them are empty
+        if entry.custom['charactername'].text == None or entry.custom['server'].text == None:
             continue
 
-        # get the text of the cells of the row and skip any rows where
-        # column 4 is a non-breaking space.
-        toon = row[3].encode('utf-8','ignore')
+        toon = entry.custom['charactername'].text.encode('utf-8','ignore')
         if len(toon) == 0:
             continue
 
-        if row[4] != 'Aerie Peak':
-            toon += '/%s' % row[4].encode('utf-8','ignore')
+        realm = entry.custom['server'].text.encode('utf-8','ignore')
+        if realm != 'Aerie Peak':
+            toon += '/%s' % realm
+        else:
+            toon += '/aerie-peak'
 
         toons.append(toon)
 
@@ -70,7 +88,7 @@ def worker(g, sheet):
     results = query.fetch(1)
 
     responsetext = ''
-    loggroup = False
+    loggroup = ''
     if (len(results) == 0):
         # create a new group, but only if it has at least 5 toons in
         # it.  that's the threshold for building progress data and
@@ -85,9 +103,10 @@ def worker(g, sheet):
             newgroup.toons = toons
             newgroup.put()
             responsetext = 'Added new group %s with %d toons<br/>\n' % (g,len(toons))
-            loggroup = True
+            loggroup = 'Added'
         else:
             responsetext = 'New group %s only has %d toons and was not included<br/>\n' % (g, len(toons))
+            loggroup = 'Skipped'
     else:
         # the group already exists and all we need to do is update the
         # toon list.  all of the other data stays the same.
@@ -95,7 +114,7 @@ def worker(g, sheet):
         existing.toons = toons
         existing.put()
         responsetext = 'Updated existing group %s with %d toons<br/>\n' % (g,len(toons))
-        loggroup = True
+        loggroup = 'Updated'
 
     t6 = time.time()
 
@@ -111,28 +130,37 @@ class RosterBuilder(webapp2.RequestHandler):
 
         path = os.path.join(os.path.split(__file__)[0],'api-auth.json')
         json_key = json.load(open(path))
-        gc = gspread.login(json_key['email'], json_key['password'])
+        gd_client = gdata.spreadsheet.service.SpreadsheetsService()
+        gd_client.email = json_key['email']
+        gd_client.password = json_key['password']
+        gd_client.ProgrammaticLogin()
         logging.info('logged in, grabbing main sheet')
 
-        sheet = gc.open_by_key('1tvpsPzZCFupJkTT1y7RmMkuh5VsjBiiA7FvYruJbTtw')
-
+        # Open the main roster feed
+        roster_sheet_key = '1tvpsPzZCFupJkTT1y7RmMkuh5VsjBiiA7FvYruJbTtw'
+        feed = gd_client.GetWorksheetsFeed(roster_sheet_key)
+      
         t1 = time.time()
+        # Grab various columns from the DASHBOARD sheet on the spreadsheet, but
+        # ignore any groups that are marked as Disbanded.  This is better than
+        # looping back through the data again to remove them.
         logging.info('getting roster sheet')
-        bigroster = sheet.worksheet('BIG ROSTER BOARD')
-        groupnames = bigroster.row_values(1)
-        actives = bigroster.row_values(2)
-        groups = list()
+        dashboard_id = getsheetID(feed, 'DASHBOARD')
+        dashboard = gd_client.GetListFeed(roster_sheet_key, dashboard_id)
 
-        # Grab all of the group names, but discard any that are marked
-        # Disbanded.  This will cause disbanded groups to get deleted in the
-        # next part.
-        for i,group in enumerate(groupnames):
-            if len(group) > 0 and actives[i] != 'Disbanded':
-                groups.append(group)
-        groups = sorted(groups)
-        
+        groupnames = list()
+        for entry in dashboard.entry:
+            if entry.custom['teamstatus'].text != 'Disbanded':
+                groupnames.append(entry.custom['teamname'].text)
+
+        groups = sorted(groupnames)
+
         logging.info('num groups: %d' % len(groups))
         t2 = time.time()
+
+        groupcount = 0
+        tooncount = 0
+        responses = list()
 
         # Grab the list of groups already in the database.  Loop through and
         # delete any groups that don't exist in the list (it happens...) and
@@ -142,7 +170,7 @@ class RosterBuilder(webapp2.RequestHandler):
         results = query.fetch()
         for res in results:
             if res.name not in groups:
-                self.response.write('Removed disbanded or non-existent team: %s<br/>\n' % res.name)
+                responses.append(('Removed', 'Removed disbanded or non-existent team from database: %s' % res.name))
                 res.key.delete()
 
         t3 = time.time()
@@ -154,15 +182,11 @@ class RosterBuilder(webapp2.RequestHandler):
         # rosters in parallel.  due to the memory limits on GAE, we only allow
         # 25 threads at a time.  this comes *really* close to hitting both the
         # limit on page-load time and the limit on memory.
-        groupcount = 0
-        tooncount = 0
-        responses = dict()
-
         executor = futures.ThreadPoolExecutor(max_workers=25)
 
         fs = dict()
         for g in groups:
-            fs[executor.submit(worker, g, sheet)] = g
+            fs[executor.submit(worker, g, feed, gd_client, roster_sheet_key)] = g
 
         for future in futures.as_completed(fs):
             g = fs[future]
@@ -170,18 +194,36 @@ class RosterBuilder(webapp2.RequestHandler):
                 logging.info("%s generated an exception: %s" % (g, future.exception()))
             else:
                 returnval = future.result()
-                responses[g] = returnval[2]
-                if returnval[0] == True:
+                responses.append((returnval[0],returnval[2]))
+                if returnval[0] == 'Added' or returnval[0] == 'Updated':
                     groupcount += 1
                     tooncount += returnval[1]
         fs.clear()
 
-        responses = sorted(responses.items(), key=operator.itemgetter(0))
-        for i in responses:
-            self.response.write(i[1])
+        self.response.write('<h3>New Raid Groups</h3>')
+        added = sorted([x for x in responses if x[0] == 'Added'], key=lambda tup: tup[1])
+        for i in added:
+            self.response.write('%s<br/>' % i[1])
+
+        self.response.write('<h3>Updated Raid Groups</h3>')
+        updated = sorted([x for x in responses if x[0] == 'Updated'], key=lambda tup: tup[1])
+        for i in updated:
+            self.response.write('%s<br/>' % i[1])
+
+        self.response.write('<h3>Disbanded/Removed Raid Groups</h3>')
+        removed = sorted([x for x in responses if x[0] == 'Removed'], key=lambda tup: tup[1])
+        for i in removed:
+            self.response.write('%s<br/>' % i[1])
+
+        self.response.write('<h3>Raid groups skipped due to Size</h3>')
+        skipped = sorted([x for x in responses if x[0] == 'Skipped'], key=lambda tup: tup[1])
+        for i in skipped:
+            self.response.write('%s<br/>' % i[1])
 
         t6 = time.time()
         logging.info('time spent building groups %s' % (t6-t3))
 
         self.response.write('<br/>')
         self.response.write('Now managing %d groups with %d total toons<br/>' % (groupcount, tooncount))
+
+        self.response.write('</body></html>')
