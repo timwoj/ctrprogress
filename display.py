@@ -61,18 +61,17 @@ class Display(webapp2.RequestHandler):
                     bosses.append((boss.name, boss.normaldead, boss.heroicdead, boss.mythicdead))
                 index_dict = {item: index for index, item in enumerate(raidbosses)}
                 bosses.sort(key=lambda t:index_dict[t[0]])
-                print bosses
 
                 for boss in bosses:
-                    if boss[1]:
+                    if boss[1] != None:
                         normaltext += "<div class='bossdead'>"+boss[0]+"</div>";
                     else:
                         normaltext += "<div class='bossalive'>"+boss[0]+"</div>";
-                    if boss[2]:
+                    if boss[2] != None:
                         heroictext += "<div class='bossdead'>"+boss[0]+"</div>";
                     else:
                         heroictext += "<div class='bossalive'>"+boss[0]+"</div>";
-                    if boss[3]:
+                    if boss[3] != None:
                         mythictext += "<div class='bossdead'>"+boss[0]+"</div>";
                     else:
                         mythictext += "<div class='bossalive'>"+boss[0]+"</div>";

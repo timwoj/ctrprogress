@@ -32,9 +32,9 @@ class Constants:
 # model below.
 class Boss(ndb.Model):
     name = ndb.StringProperty(required = True, indexed = True)
-    normaldead = ndb.BooleanProperty(required = True, default = False)
-    heroicdead = ndb.BooleanProperty(required = True, default = False)
-    mythicdead = ndb.BooleanProperty(required = True, default = False)
+    normaldead = ndb.DateProperty(required = True, default = None)
+    heroicdead = ndb.DateProperty(required = True, default = None)
+    mythicdead = ndb.DateProperty(required = True, default = None)
 
 # Model of a raid instance.  This keeps track of the number of bosses killed by a raid
 # group for a single instance.  Contains a number of kills for each difficulty, built
@@ -66,14 +66,16 @@ class Group(ndb.Model):
     @classmethod
     def query_for_t17_display(self):
         q = self.query().order(-Group.brf.mythic, -Group.brf.heroic, -Group.hm.mythic, -Group.brf.normal, -Group.hm.heroic, -Group.hm.normal).order(Group.name)
-        return q.fetch()
+        results = q.fetch()
+        return results
 
     # Query used in display.py to get a consistent set of data for both the graphical
     # and text displays.  This is for tier 18 data (HFC)
     @classmethod
     def query_for_t18_display(self):
         q = self.query().order(-Group.hfc.mythic, -Group.hfc.heroic, -Group.hfc.normal).order(Group.name)
-        return q.fetch()
+        results = q.fetch()
+        return results
 
 class Global(ndb.Model):
     lastupdated = ndb.DateTimeProperty(auto_now=True)

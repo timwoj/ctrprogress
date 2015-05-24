@@ -98,16 +98,16 @@ class ProgressBuilder(webapp2.RequestHandler):
 
             for group_boss in group_raid.bosses:
                 data_boss = [b for b in data_raid if b.name == group_boss.name][0]
-                if data_boss.normaldead == True:
-                    group_boss.normaldead = True
-                if data_boss.heroicdead == True:
-                    group_boss.heroicdead = True
-                if data_boss.mythicdead == True:
-                    group_boss.mythicdead = True
+                if data_boss.normaldead != None and group_boss.normaldead == None:
+                    group_boss.normaldead = data_boss.normaldead
+                if data_boss.heroicdead != None and group_boss.heroicdead == None:
+                    group_boss.heroicdead = data_boss.normaldead
+                if data_boss.mythicdead != None and group_boss.mythicdead == None:
+                    group_boss.mythicdead = data_boss.normaldead
 
             for d in Constants.difficulties:
                 old = getattr(group_raid, d)
-                new = len([b for b in group_raid.bosses if getattr(b, d+'dead') == True])
+                new = len([b for b in group_raid.bosses if getattr(b, d+'dead') != None])
                 if old < new:
                     if (new_hist == None):
                         new_hist = ctrpmodels.HistoryEntry(group=group.name)
@@ -195,7 +195,7 @@ class ProgressBuilder(webapp2.RequestHandler):
                     logging.info('%s: time: %d   count: %s' % (boss, t, count))
                     if count >= 5:
                         logging.info('*** found valid kill for %s %s at %d' % (d, boss, t))
-                        setattr(bossobj, d+'dead', True)
+                        setattr(bossobj, d+'dead', datetime.date.today())
                         break
 
             progress[raidname].append(bossobj)
