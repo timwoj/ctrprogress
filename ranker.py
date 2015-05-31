@@ -23,26 +23,21 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 class ProgressBuilder(webapp2.RequestHandler):
 
     def post(self):
-        start = self.request.get('start')
-        end = self.request.get('end')
-        logging.info('%s %s' % (start,end))
-
+        groupname = self.request.get('group')
         importer = wowapi.Importer()
 
-        q = Group.query()
+        q = Group.query(Group.name == groupname)
         groups = q.fetch()
+        # sanity check, tho this shouldn't be possible
+        if len(groups) == 0:
+            logging.info('Builder failed to find group %s' % groupname)
+            return
 
-        logging.info('Builder task for range %s to %s started' % (start, end))
+        logging.info('Builder task for %s started' % groupname)
 
-        for group in groups:
-            firstchar = group.name[0]
-            if firstchar < start or firstchar > end:
-                continue
+        self.processGroup(groups[0], importer, True)
 
-            self.processGroup(group, importer, True)
-            break
-
-        logging.info('Builder task for range %s to %s completed' % (start, end))
+        logging.info('Builder task for %s completed' % groupname)
 
         # update the last updated for the whole dataset.  don't actually
         # have to set the time here, the auto_now flag on the property does
@@ -234,16 +229,15 @@ class Ranker(webapp2.RequestHandler):
         queue = Queue()
         stats = queue.fetch_statistics()
         if stats.tasks == 0:
-            #taskqueue.add(url='/builder', params={'start':'A', 'end':'B'})
-            #taskqueue.add(url='/builder', params={'start':'C', 'end':'E'})
-            #taskqueue.add(url='/builder', params={'start':'F', 'end':'G'})
-            #taskqueue.add(url='/builder', params={'start':'H', 'end':'H'})
-            #taskqueue.add(url='/builder', params={'start':'I', 'end':'M'})
-            #taskqueue.add(url='/builder', params={'start':'N', 'end':'O'})
-            #taskqueue.add(url='/builder', params={'start':'P', 'end':'R'})
-            #taskqueue.add(url='/builder', params={'start':'S', 'end':'S'})
-            taskqueue.add(url='/builder', params={'start':'T', 'end':'T'})
-            #taskqueue.add(url='/builder', params={'start':'U', 'end':'Z'})
+        
+            # queue up all of the groups into individual tasks.  the configuration
+            # in queue.yaml only allows 10 tasks to run at once.  the builder only
+            # allows 10 URL requests at a time, which should hopefully keep the
+            # Blizzard API queries under control.
+            q = Group.query()
+            groups = q.fetch()
+            for g in groups:
+                taskqueue.add(url='/builder', params={'group':g.name})
 
         self.redirect('/rank')
 
