@@ -20,16 +20,16 @@ import logging
 import os
 import datetime
 
+# Need this stuff to do oauth with GAE
+import httplib2
+from oauth2client.client import SignedJwtAssertionCredentials
+from apiclient.discovery import build
+
 # need this stuff for the google data API
-try:
-  from xml.etree import ElementTree
-except ImportError:
-  from elementtree import ElementTree
-import gdata.spreadsheet.service
-import gdata.service
-import atom.service
-import gdata.spreadsheet
-import atom
+import gdata.spreadsheets
+import gdata.spreadsheets.client
+import gdata.gauth
+import gdata.alt.appengine
 
 from ctrpmodels import Constants
 from ctrpmodels import Group
@@ -67,14 +67,14 @@ def worker(g, feed, client, curr_key):
 
         # get the text from the cells for this row that we care about,
         # assuming none of them are empty
-        if entry.custom['charactername'].text == None or entry.custom['server'].text == None:
+        if entry.get_value('charactername') == None or entry.get_value('server') == None:
             continue
 
-        toon = entry.custom['charactername'].text.encode('utf-8','ignore')
+        toon = entry.get_value('charactername').encode('utf-8','ignore')
         if len(toon) == 0:
             continue
 
-        realm = entry.custom['server'].text.encode('utf-8','ignore')
+        realm = entry.get_value('server').encode('utf-8','ignore')
         if realm != 'Aerie Peak':
             toon += '/%s' % realm
         else:
@@ -150,21 +150,36 @@ class RosterBuilder(webapp2.RequestHandler):
     def get(self):
 
         self.response.write('<html><head><title>Roster Update</title></head><body>')
-        
-        path = os.path.join(os.path.split(__file__)[0],'api-auth.json')
-        json_key = json.load(open(path))
 
-        gd_client = gdata.spreadsheet.service.SpreadsheetsService()
-        gd_client.email = json_key['email']
-        gd_client.password = json_key['password']
-        gd_client.ProgrammaticLogin()
+        path = os.path.join(os.path.split(__file__)[0],'api-auth.json')
+        auth_data = json.load(open(path))
+
+        path = os.path.join(os.path.split(__file__)[0],'oauth_private_key.pem')
+        with open(path) as keyfile:
+          private_key = keyfile.read()
+        
+        credentials = SignedJwtAssertionCredentials(
+          auth_data['oauth_client_email'],
+          private_key,
+          scope=(
+            'https://www.googleapis.com/auth/drive',
+            'https://spreadsheets.google.com/feeds',
+            'https://docs.google.com/feeds',
+          ))
+        http_auth = credentials.authorize(httplib2.Http())
+        authclient = build('oauth2','v2',http=http_auth)
+
+        auth2token = gdata.gauth.OAuth2TokenFromCredentials(credentials)
+
+        gd_client = gdata.spreadsheets.client.SpreadsheetsClient()
+        gd_client = auth2token.authorize(gd_client)
 
         logging.info('logged in, grabbing main sheet')
 
         # Open the main roster feed
         roster_sheet_key = '1tvpsPzZCFupJkTT1y7RmMkuh5VsjBiiA7FvYruJbTtw'
-        feed = gd_client.GetWorksheetsFeed(roster_sheet_key)
-      
+        feed = gd_client.GetWorksheets(roster_sheet_key)
+        
         t1 = time.time()
         logging.info('getting group names from dashboard')
         
@@ -177,9 +192,9 @@ class RosterBuilder(webapp2.RequestHandler):
         dashboard_id = getsheetID(feed, 'DASHBOARD')
         dashboard = gd_client.GetListFeed(roster_sheet_key, dashboard_id)
         for entry in dashboard.entry:
-            if entry.custom['teamstatus'].text != 'Disbanded':
-                groupnames.append(entry.custom['teamname'].text)
-                lastupdates.append(entry.custom['lastrosterupdate'].text)
+            if entry.get_value('teamstatus') != 'Disbanded':
+                groupnames.append(entry.get_value('teamname'))
+                lastupdates.append(entry.get_value('lastrosterupdate'))
 
         # sort the lists by the names in the group list.  This is a slick use
         # of zip.  it works by zipping the two lists into a single list of
@@ -244,7 +259,7 @@ class RosterBuilder(webapp2.RequestHandler):
         for future in futures.as_completed(fs):
             g = fs[future]
             if future.exception() is not None:
-                logging.info("%s generated an exception: %s" % (g, future.exception()))
+                logging.info('%s generated an exception: %s' % (g, future.exception()))
             else:
                 returnval = future.result()
                 responses.append((returnval[0], returnval[2]))
