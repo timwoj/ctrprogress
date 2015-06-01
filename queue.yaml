@@ -1,0 +1,7 @@
+queue:
+- name: default
+  max_concurrent_requests: 10
+
+queue:
+- name: taskcheck
+  max_concurrent_requests: 1
