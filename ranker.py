@@ -24,32 +24,41 @@ class ProgressBuilder(webapp2.RequestHandler):
 
     def post(self):
         groupname = self.request.get('group')
-        importer = wowapi.Importer()
+        if groupname == 'ctrp-taskcheck':
 
-        q = Group.query(Group.name == groupname)
-        groups = q.fetch()
-        # sanity check, tho this shouldn't be possible
-        if len(groups) == 0:
-            logging.info('Builder failed to find group %s' % groupname)
-            return
+            # Grab the default queue and keep checking for whether or not
+            # all of the tasks have finished.
+            default_queue = Queue()
+            stats = queue.fetch_statistics()
+            while stats.tasks > 0:
+                time.sleep(5)
+                stats = queue.fetch_statistics()
+                
+            # update the last updated for the whole dataset.  don't actually
+            # have to set the time here, the auto_now flag on the property does
+            # it for us.
+            q = ctrpmodels.Global.query()
+            r = q.fetch()
+            if (len(r) == 0):
+                g = ctrpmodels.Global()
+            else:
+                g = r[0]
+                g.put()
 
-        logging.info('Builder task for %s started' % groupname)
-
-        self.processGroup(groups[0], importer, True)
-
-        logging.info('Builder task for %s completed' % groupname)
-
-        # update the last updated for the whole dataset.  don't actually
-        # have to set the time here, the auto_now flag on the property does
-        # it for us.
-        q = ctrpmodels.Global.query()
-        r = q.fetch()
-        if (len(r) == 0):
-            g = ctrpmodels.Global()
         else:
-            g = r[0]
-        g.put()
-
+            importer = wowapi.Importer()
+            
+            q = Group.query(Group.name == groupname)
+            groups = q.fetch()
+            # sanity check, tho this shouldn't be possible
+            if len(groups) == 0:
+                logging.info('Builder failed to find group %s' % groupname)
+                return
+        
+            logging.info('Builder task for %s started' % groupname)
+            self.processGroup(groups[0], importer, True)
+            logging.info('Builder task for %s completed' % groupname)
+            
     def processGroup(self, group, importer, writeDB):
         logging.info('Starting work on group %s' % group.name)
 
@@ -238,6 +247,9 @@ class Ranker(webapp2.RequestHandler):
             groups = q.fetch()
             for g in groups:
                 taskqueue.add(url='/builder', params={'group':g.name})
+
+            taskcheck = Queue(name='taskcheck')
+            taskcheck.add(url='/builder', params={'group':ctrp-taskcheck})
 
         self.redirect('/rank')
 
