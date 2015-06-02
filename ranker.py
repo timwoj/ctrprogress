@@ -2,19 +2,24 @@
 
 #!/usr/bin/env python
 
-import webapp2,jinja2,os,datetime
+# External imports
+import webapp2,jinja2,os,datetime,json
 import logging
-import wowapi
+import twitter
 
-from ctrpmodels import Constants
-from ctrpmodels import Group
-import ctrpmodels
-
+# Imports from google
 from google.appengine.ext import ndb
 from google.appengine.api.memcache import Client
 from google.appengine.api import taskqueue
 from google.appengine.api.taskqueue import Queue
 from google.appengine.api.taskqueue import QueueStatistics
+from google.appengine.api.taskqueue import Task
+
+# Internal imports
+import wowapi
+from ctrpmodels import Constants
+from ctrpmodels import Group
+import ctrpmodels
 
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
@@ -29,11 +34,11 @@ class ProgressBuilder(webapp2.RequestHandler):
             # Grab the default queue and keep checking for whether or not
             # all of the tasks have finished.
             default_queue = Queue()
-            stats = queue.fetch_statistics()
+            stats = default_queue.fetch_statistics()
             while stats.tasks > 0:
                 time.sleep(5)
-                stats = queue.fetch_statistics()
-                
+                stats = default_queue.fetch_statistics()
+
             # update the last updated for the whole dataset.  don't actually
             # have to set the time here, the auto_now flag on the property does
             # it for us.
@@ -45,20 +50,71 @@ class ProgressBuilder(webapp2.RequestHandler):
                 g = r[0]
                 g.put()
 
+            # post any changes that happened with the history to twitter
+            curdate = datetime.date.today()
+            q = ctrpmodels.History.query(ctrpmodels.History.date == curdate)
+            r = q.fetch()
+            if len(r) != 0:
+                path = os.path.join(os.path.split(__file__)[0],'api-auth.json')
+                json_data = json.load(open(path))
+
+                tw_client = twitter.Api(
+                    consumer_key=json_data['twitter_consumer_key'],
+                    consumer_secret=json_data['twitter_consumer_secret'],
+                    access_token_key=json_data['twitter_access_token'],
+                    access_token_secret=json_data['twitter_access_secret'],
+                    cache=None)
+
+                # if there were results, grab the entries for the day and sort
+                # them by group name
+                updates = r[0].updates
+                updates = sorted(updates, key=lambda k: k.group)
+
+                template = 'CtR group <%s> killed %d new bosses in %s %s to be %d/%d%s!'
+                for u in updates:
+
+                    # Skip this update if it's already been tweeted
+                    if u.tweeted == True:
+                        continue
+                    
+                    # mark this update as tweeted to avoid reposts
+                    u.tweeted = True
+
+                    for raid in [('hfc',Constants.hfcname,Constants.hfcbosses),
+                                 ('brf',Constants.brfname,Constants.brfbosses),
+                                 ('hm',Constants.hmname,Constants.hmbosses)]:
+                        for d in reversed(Constants.difficulties):
+
+                            killedtoday = getattr(u,raid[0]+'_'+d)
+                            if (killedtoday == 0):
+                                continue
+                            killtotal = getattr(u,raid[0]+'_'+d+'_total')
+                            text = template % (u.group, killedtoday, d.title(),
+                                               raid[1], killtotal, len(raid[2]),
+                                               d.title[0])
+                            if (d == 'heroic' or d == 'mythic') and killtotal == len(raid[2]):
+                                text = text + ' #aotc'
+                            print text
+                            tw_client.PostUpdate(text)
+
+                # Update the history entry in ndb so that the 'tweeted' flags
+                # all get marked as true
+                r[0].put()
+
         else:
             importer = wowapi.Importer()
-            
+
             q = Group.query(Group.name == groupname)
             groups = q.fetch()
             # sanity check, tho this shouldn't be possible
             if len(groups) == 0:
                 logging.info('Builder failed to find group %s' % groupname)
                 return
-        
+
             logging.info('Builder task for %s started' % groupname)
             self.processGroup(groups[0], importer, True)
             logging.info('Builder task for %s completed' % groupname)
-            
+
     def processGroup(self, group, importer, writeDB):
         logging.info('Starting work on group %s' % group.name)
 
@@ -138,7 +194,7 @@ class ProgressBuilder(webapp2.RequestHandler):
 
             h = None
             new_hist = None
-        
+
         logging.info('Finished building group %s' % group.name)
 
     def parse(self, bosses, toondata, raidname, progress, writeDB):
@@ -203,7 +259,7 @@ class ProgressBuilder(webapp2.RequestHandler):
                         break
 
             progress[raidname].append(bossobj)
-            
+
     def loadone(self):
         group = self.request.get('group')
         logging.info('loading single %s' % group)
@@ -238,7 +294,7 @@ class Ranker(webapp2.RequestHandler):
         queue = Queue()
         stats = queue.fetch_statistics()
         if stats.tasks == 0:
-        
+
             # queue up all of the groups into individual tasks.  the configuration
             # in queue.yaml only allows 10 tasks to run at once.  the builder only
             # allows 10 URL requests at a time, which should hopefully keep the
@@ -248,8 +304,9 @@ class Ranker(webapp2.RequestHandler):
             for g in groups:
                 taskqueue.add(url='/builder', params={'group':g.name})
 
+            checker = Task(url='/builder', params={'group':'ctrp-taskcheck'})
             taskcheck = Queue(name='taskcheck')
-            taskcheck.add(url='/builder', params={'group':ctrp-taskcheck})
+            taskcheck.add(checker)
 
         self.redirect('/rank')
 

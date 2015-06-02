@@ -100,6 +100,7 @@ class HistoryEntry(ndb.Model):
     hm_mythic_total = ndb.IntegerProperty(default = 0, required = True)
     hm_heroic_total = ndb.IntegerProperty(default = 0, required = True)
     hm_normal_total = ndb.IntegerProperty(default = 0, required = True)
+    tweeted = ndb.BooleanProperty(default = False, required = True)
 
 class History(ndb.Model):
     date = ndb.DateProperty(indexed=True)
