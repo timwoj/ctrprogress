@@ -178,11 +178,6 @@ class DisplayHistory(webapp2.RequestHandler):
                 updates = r[0].updates
                 updates = sorted(updates, key=lambda k: k.group)
 
-                # Grab the global data so we can populate the template with
-                # a couple of the values.
-                q2 = ctrpmodels.Global.query()
-                r2 = q2.fetch()
-
                 # now loop through the groups and output the updates in some
                 # fashion.  sort the updates BRF -> HM, then M -> H -> N
                 for u in updates:
