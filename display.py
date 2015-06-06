@@ -141,7 +141,7 @@ class DisplayHistory(webapp2.RequestHandler):
         self.response.write(template.render(template_values))
 
         # add the beginnings of the table
-        self.response.write('<table>')
+        self.response.write('<table style="margin-left:50px;margin-right:50px">\n')
 
         # request all of the history entries, sorted in reverse order by date
         curdate = datetime.date.today()
@@ -151,15 +151,13 @@ class DisplayHistory(webapp2.RequestHandler):
         az2am = datetime.time(9)
 
         for i in range(0,13):
-            self.response.write('<thead><tr>\n')
-            self.response.write('<th colspan="2" style="padding-top:20px">'+str(curdate)+'</th>\n')
-            self.response.write('</tr></thead>\n')
+            self.response.write('<tr><td colspan="2" class="history-date">'+str(curdate)+'</td></tr>\n')
             q = ctrpmodels.History.query(ctrpmodels.History.date == curdate)
             r = q.fetch()
             if (len(r) == 0):
                 # if there were no results for this date, add just a simple
                 # entry displaying nothing
-                self.response.write('<tr>\n')
+                self.response.write('<tr>')
 
                 self.response.write('<td colspan="2" style="text-align:center">')
                 if (i == 0):
@@ -170,13 +168,11 @@ class DisplayHistory(webapp2.RequestHandler):
                         self.response.write('No new kills for this date!')
                 else:
                     self.response.write('No new kills for this date!')
-                self.response.write('</td>\n')
+                self.response.write('</td>')
                 self.response.write('</tr>\n')
             else:
-                # if there were results, grab the entries for the day and sort
-                # them by group name
-                updates = r[0].updates
-                updates = sorted(updates, key=lambda k: k.group)
+                # if there were results, sort them by group name
+                updates = sorted(r, key=lambda entry: entry.group)
 
                 # now loop through the groups and output the updates in some
                 # fashion.  sort the updates BRF -> HM, then M -> H -> N
@@ -186,12 +182,13 @@ class DisplayHistory(webapp2.RequestHandler):
                         'history': u,
                         'num_brf_bosses': ctrpmodels.Constants.num_brf_bosses,
                         'num_hm_bosses': ctrpmodels.Constants.num_hm_bosses,
+                        'num_hfc_bosses': ctrpmodels.Constants.num_hfc_bosses,
                     }
                     template = JINJA_ENVIRONMENT.get_template(
                         'templates/history.html')
                     self.response.write(template.render(template_values))
+                    self.response.write('\n')
 
-            self.response.write('</tbody>\n')
             curdate -= oneday
 
         self.response.write('</table>\n')

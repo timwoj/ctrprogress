@@ -1,25 +1,31 @@
-{% autoescape true -%}
+{%- macro addentry(name, diff, diffchar, raidsize, kills, total) -%}
+{% if kills|length > 0 %}
+Killed <b>
+  {%- for k in kills -%}
+    {%- if kills|length == 1 -%}
+      {{ k }}
+    {%- else -%}
+      {%- if loop.index == kills|length -%}
+        and {{ k }}
+      {%- else -%}
+        {{ k }}{%- if kills|length != 2 %}, {% endif -%}
+      {%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
+  </b> in {{ diff }} {{ name }} and is now <b>{{ total }}/{{ raidsize }}{{ diffchar }}</b><br/>
+{%- endif %}
+{%- endmacro -%}
 <tr>
-  <td style="text-align:left;vertical-align:top">{{ history.group }}</td>
+  <td class="history-group-header">{{ history.group }}</td>
   <td style="padding-left:10px">
-{% if history.brf_mythic > 0 -%}
-Killed {{ history.brf_mythic }} new boss{% if history.brf_mythic > 1 %}es{% endif %} in Mythic Blackrock Foundry and is now {{ history.brf_mythic_total }}/{{ num_brf_bosses }}M<br/>
-{% endif -%}
-{% if history.brf_heroic > 0 -%}
-Killed {{ history.brf_heroic }} new boss{% if history.brf_heroic > 1 %}es{% endif %} in Heroic Blackrock Foundry and is now {{ history.brf_heroic_total }}/{{ num_brf_bosses }}H<br/>
-{% endif -%}
-{% if history.brf_normal > 0 -%}
-Killed {{ history.brf_normal }} new boss{% if history.brf_normal > 1 %}es{% endif %} in Normal Blackrock Foundry and is now {{ history.brf_normal_total }}/{{ num_brf_bosses }}N<br/>
-{% endif -%}
-{% if history.hm_mythic > 0 -%}
-Killed {{ history.hm_mythic }} new boss{% if history.hm_mythic > 1 %}es{% endif %} in Mythic Highmaul and is now {{ history.hm_mythic_total }}/{{ num_hm_bosses }}M<br/>
-{% endif -%}
-{% if history.hm_heroic > 0 -%}
-Killed {{ history.hm_heroic }} new boss{% if history.hm_heroic > 1 %}es{% endif %} in Heroic Highmaul and is now {{ history.hm_heroic_total }}/{{ num_hm_bosses }}H<br/>
-{% endif -%}
-{% if history.hm_normal > 0 -%}
-Killed {{ history.hm_normal }} new boss{% if history.hm_normal > 1 %}es{% endif %} in Normal Highmaul and is now {{ history.hm_normal_total }}/{{ num_hm_bosses }}N<br/>
-{% endif -%}
+    {{- addentry('Hellfire Citadel', 'Mythic', 'M', num_hfc_bosses, history.hfc.mythic, history.hfc.mythic_total) -}}
+    {{- addentry('Hellfire Citadel', 'Heroic', 'H', num_hfc_bosses, history.hfc.heroic, history.hfc.heroic_total) -}}
+    {{- addentry('Hellfire Citadel', 'Normal', 'N', num_hfc_bosses, history.hfc.normal, history.hfc.normal_total) -}}
+    {{- addentry('Blackrock Foundry', 'Mythic', 'M', num_brf_bosses, history.brf.mythic, history.brf.mythic_total) -}}
+    {{- addentry('Blackrock Foundry', 'Heroic', 'H', num_brf_bosses, history.brf.heroic, history.brf.heroic_total) -}}
+    {{- addentry('Blackrock Foundry', 'Normal', 'N', num_brf_bosses, history.brf.normal, history.brf.normal_total) -}}
+    {{- addentry('Highmaul', 'Mythic', 'M', num_hm_bosses, history.hm.mythic, history.hm.mythic_total) -}}
+    {{- addentry('Highmaul', 'Heroic', 'H', num_hm_bosses, history.hm.heroic, history.hm.heroic_total) -}}
+    {{- addentry('Highmaul', 'Normal', 'N', num_hm_bosses, history.hm.normal, history.hm.normal_total) }}
   </td>
 </tr>
-{% endautoescape -%}

@@ -91,3 +91,16 @@
     font-family:quadrata;
     font-size:14px;
 }
+
+.history-date {
+    padding-top:20px;
+    text-align:center;
+    font-weight:bold;
+    font-size:110%
+}
+
+.history-group-header {
+    text-align:left;
+    vertical-align:top;
+    white-space:nowrap
+}

@@ -80,31 +80,21 @@ class Group(ndb.Model):
 class Global(ndb.Model):
     lastupdated = ndb.DateTimeProperty(auto_now=True)
 
-class HistoryEntry(ndb.Model):
-    group = ndb.StringProperty(required = True)
-    hfc_mythic = ndb.IntegerProperty(default = 0, required = True)
-    hfc_heroic = ndb.IntegerProperty(default = 0, required = True)
-    hfc_normal = ndb.IntegerProperty(default = 0, required = True)
-    hfc_mythic_total = ndb.IntegerProperty(default = 0, required = True)
-    hfc_heroic_total = ndb.IntegerProperty(default = 0, required = True)
-    hfc_normal_total = ndb.IntegerProperty(default = 0, required = True)
-    brf_mythic = ndb.IntegerProperty(default = 0, required = True)
-    brf_heroic = ndb.IntegerProperty(default = 0, required = True)
-    brf_normal = ndb.IntegerProperty(default = 0, required = True)
-    brf_mythic_total = ndb.IntegerProperty(default = 0, required = True)
-    brf_heroic_total = ndb.IntegerProperty(default = 0, required = True)
-    brf_normal_total = ndb.IntegerProperty(default = 0, required = True)
-    hm_mythic = ndb.IntegerProperty(default = 0, required = True)
-    hm_heroic = ndb.IntegerProperty(default = 0, required = True)
-    hm_normal = ndb.IntegerProperty(default = 0, required = True)
-    hm_mythic_total = ndb.IntegerProperty(default = 0, required = True)
-    hm_heroic_total = ndb.IntegerProperty(default = 0, required = True)
-    hm_normal_total = ndb.IntegerProperty(default = 0, required = True)
-    tweeted = ndb.BooleanProperty(default = False, required = True)
+class RaidHistory(ndb.Model):
+    mythic = ndb.StringProperty(repeated=True)
+    heroic = ndb.StringProperty(repeated=True)
+    normal = ndb.StringProperty(repeated=True)
+    mythic_total = ndb.IntegerProperty(default = 0)
+    heroic_total = ndb.IntegerProperty(default = 0)
+    normal_total = ndb.IntegerProperty(default = 0)
 
 class History(ndb.Model):
-    date = ndb.DateProperty(indexed=True)
-    updates = ndb.StructuredProperty(HistoryEntry, repeated = True)
+    group = ndb.StringProperty(required = True)
+    date = ndb.DateProperty(required = True)
+    hfc = ndb.StructuredProperty(RaidHistory)
+    brf = ndb.StructuredProperty(RaidHistory)
+    hm = ndb.StructuredProperty(RaidHistory)
+    tweeted = ndb.BooleanProperty(default = False, required = True)
 
 class Mergev1tov2(webapp2.RequestHandler):
     def get(self):

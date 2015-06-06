@@ -38,68 +38,8 @@ class ProgressBuilder(webapp2.RequestHandler):
             while stats.tasks > 0:
                 time.sleep(5)
                 stats = default_queue.fetch_statistics()
-
-            # update the last updated for the whole dataset.  don't actually
-            # have to set the time here, the auto_now flag on the property does
-            # it for us.
-            q = ctrpmodels.Global.query()
-            r = q.fetch()
-            if (len(r) == 0):
-                g = ctrpmodels.Global()
-            else:
-                g = r[0]
-                g.put()
-
-            # post any changes that happened with the history to twitter
-            curdate = datetime.date.today()
-            q = ctrpmodels.History.query(ctrpmodels.History.date == curdate)
-            r = q.fetch()
-            if len(r) != 0:
-                path = os.path.join(os.path.split(__file__)[0],'api-auth.json')
-                json_data = json.load(open(path))
-
-                tw_client = twitter.Api(
-                    consumer_key=json_data['twitter_consumer_key'],
-                    consumer_secret=json_data['twitter_consumer_secret'],
-                    access_token_key=json_data['twitter_access_token'],
-                    access_token_secret=json_data['twitter_access_secret'],
-                    cache=None)
-
-                # if there were results, grab the entries for the day and sort
-                # them by group name
-                updates = r[0].updates
-                updates = sorted(updates, key=lambda k: k.group)
-
-                template = 'CtR group <%s> killed %d new bosses in %s %s to be %d/%d%s!'
-                for u in updates:
-
-                    # Skip this update if it's already been tweeted
-                    if u.tweeted == True:
-                        continue
-                    
-                    # mark this update as tweeted to avoid reposts
-                    u.tweeted = True
-
-                    for raid in [('hfc',Constants.hfcname,Constants.hfcbosses),
-                                 ('brf',Constants.brfname,Constants.brfbosses),
-                                 ('hm',Constants.hmname,Constants.hmbosses)]:
-                        for d in reversed(Constants.difficulties):
-
-                            killedtoday = getattr(u,raid[0]+'_'+d)
-                            if (killedtoday == 0):
-                                continue
-                            killtotal = getattr(u,raid[0]+'_'+d+'_total')
-                            text = template % (u.group, killedtoday, d.title(),
-                                               raid[1], killtotal, len(raid[2]),
-                                               d.title[0])
-                            if (d == 'heroic' or d == 'mythic') and killtotal == len(raid[2]):
-                                text = text + ' #aotc'
-                            print text
-                            tw_client.PostUpdate(text)
-
-                # Update the history entry in ndb so that the 'tweeted' flags
-                # all get marked as true
-                r[0].put()
+                
+            self.finishBuilding()
 
         else:
             importer = wowapi.Importer()
@@ -155,45 +95,49 @@ class ProgressBuilder(webapp2.RequestHandler):
 
             group_raid = getattr(group, raid[0])
             data_raid = progress[raid[1]]
-
+            
+            killedtoday = dict()
+            killedtoday['normal'] = list()
+            killedtoday['heroic'] = list()
+            killedtoday['mythic'] = list()
+            
             for group_boss in group_raid.bosses:
                 data_boss = [b for b in data_raid if b.name == group_boss.name][0]
                 if data_boss.normaldead != None and group_boss.normaldead == None:
+                    killedtoday['normal'].append(data_boss.name)
                     group_boss.normaldead = data_boss.normaldead
                 if data_boss.heroicdead != None and group_boss.heroicdead == None:
-                    group_boss.heroicdead = data_boss.normaldead
+                    killedtoday['heroic'].append(data_boss.name)
+                    group_boss.heroicdead = data_boss.heroicdead
                 if data_boss.mythicdead != None and group_boss.mythicdead == None:
-                    group_boss.mythicdead = data_boss.normaldead
+                    killedtoday['mythic'].append(data_boss.name)
+                    group_boss.mythicdead = data_boss.mythicdead
 
             for d in Constants.difficulties:
                 old = getattr(group_raid, d)
                 new = len([b for b in group_raid.bosses if getattr(b, d+'dead') != None])
                 if old < new:
                     if (new_hist == None):
-                        new_hist = ctrpmodels.HistoryEntry(group=group.name)
-                    setattr(new_hist, raid[0]+'_'+d, new-old)
-                    setattr(new_hist, raid[0]+'_'+d+'_total', new)
+                        new_hist = ctrpmodels.History(group=group.name)
+                        new_hist.date = datetime.date.today()
+                    raidhist = getattr(new_hist, raid[0])
+                    if (raidhist == None):
+                        raidhist = ctrpmodels.RaidHistory()
+
+                    raiddiff = getattr(raidhist, d)
+                    raiddiff = killedtoday[d]
+
+                    # These aren't necessary unless a new object is created above
+                    setattr(raidhist, d+'_total', new)
+                    setattr(raidhist, d, raiddiff)
+                    setattr(new_hist, raid[0], raidhist)
+
                     setattr(group_raid, d, new)
 
         if writeDB:
             group.put()
-
-        if new_hist != None:
-            now = datetime.date.today()
-            q = ctrpmodels.History.query(ctrpmodels.History.date == now)
-            r = q.fetch()
-            if len(r) != 0:
-                h = r[0]
-            else:
-                h = ctrpmodels.History()
-                h.date = now
-                h.updates = list()
-            h.updates.append(new_hist)
-            if writeDB:
-                h.put()
-
-            h = None
-            new_hist = None
+            if new_hist != None:
+                new_hist.put()
 
         logging.info('Finished building group %s' % group.name)
 
@@ -259,6 +203,71 @@ class ProgressBuilder(webapp2.RequestHandler):
                         break
 
             progress[raidname].append(bossobj)
+            
+    def finishBuilding(self):
+
+        # update the last updated for the whole dataset.  don't actually
+        # have to set the time here, the auto_now flag on the property does
+        # it for us.
+        q = ctrpmodels.Global.query()
+        r = q.fetch()
+        if (len(r) == 0):
+            g = ctrpmodels.Global()
+        else:
+            g = r[0]
+            g.put()
+
+        # post any changes that happened with the history to twitter
+        curdate = datetime.date.today()
+        q = ctrpmodels.History.query(ctrpmodels.History.date == curdate)
+        r = q.fetch()
+        if len(r) != 0:
+            path = os.path.join(os.path.split(__file__)[0],'api-auth.json')
+            json_data = json.load(open(path))
+
+            tw_client = twitter.Api(
+                consumer_key=json_data['twitter_consumer_key'],
+                consumer_secret=json_data['twitter_consumer_secret'],
+                access_token_key=json_data['twitter_access_token'],
+                access_token_secret=json_data['twitter_access_secret'],
+                cache=None)
+
+            # if there were results, grab the entries for the day and sort
+            # them by group name
+            updates = r[0].updates
+            updates = sorted(updates, key=lambda k: k.group)
+
+            template = 'CtR group <%s> killed %d new bosses in %s %s to be %d/%d%s!'
+            for u in updates:
+
+                # Skip this update if it's already been tweeted
+                if u.tweeted == True:
+                    continue
+                
+                # mark this update as tweeted to avoid reposts
+                u.tweeted = True
+
+                for raid in [('hfc',Constants.hfcname,Constants.hfcbosses),
+                             ('brf',Constants.brfname,Constants.brfbosses),
+                             ('hm',Constants.hmname,Constants.hmbosses)]:
+                             
+                    raidhist=getattr(u, raid[0])
+                    for d in reversed(Constants.difficulties):
+
+                        kills = getattr(raidhist, d)
+                        total = getattr(raidhist, d+'_total')
+                        if len(kills != 0):
+                            text = template % (u.group, len(kills), d.title(),
+                                               raid[1], total, len(raid[2]),
+                                               d.title[0])
+                            if (d == 'heroic' or d == 'mythic') and total == len(raid[2]):
+                                text = text + ' #aotc'
+                            print text
+                            tw_client.PostUpdate(text)
+
+            # Update the history entry in ndb so that the 'tweeted' flags
+            # all get marked as true
+            r[0].put()
 
     def loadone(self):
         group = self.request.get('group')
@@ -284,11 +293,6 @@ class Ranker(webapp2.RequestHandler):
         self.response.write(template.render(template_values))
 
     def post(self):
-        # clear out any history older than two weeks
-        twoweeksago = datetime.date.today() - datetime.timedelta(14)
-        q = ctrpmodels.History.query(ctrpmodels.History.date < twoweeksago)
-        for r in q.fetch():
-            r.key.delete()
 
         # refuse to start the tasks if there are some already running
         queue = Queue()
