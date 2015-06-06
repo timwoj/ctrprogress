@@ -38,7 +38,7 @@ class ProgressBuilder(webapp2.RequestHandler):
             while stats.tasks > 0:
                 time.sleep(5)
                 stats = default_queue.fetch_statistics()
-                
+
             self.finishBuilding()
 
         else:
@@ -95,12 +95,12 @@ class ProgressBuilder(webapp2.RequestHandler):
 
             group_raid = getattr(group, raid[0])
             data_raid = progress[raid[1]]
-            
+
             killedtoday = dict()
             killedtoday['normal'] = list()
             killedtoday['heroic'] = list()
             killedtoday['mythic'] = list()
-            
+
             for group_boss in group_raid.bosses:
                 data_boss = [b for b in data_raid if b.name == group_boss.name][0]
                 if data_boss.normaldead != None and group_boss.normaldead == None:
@@ -123,6 +123,9 @@ class ProgressBuilder(webapp2.RequestHandler):
                     raidhist = getattr(new_hist, raid[0])
                     if (raidhist == None):
                         raidhist = ctrpmodels.RaidHistory()
+                        raidhist.mythic = list()
+                        raidhist.heroic = list()
+                        raidhist.normal = list()
 
                     raiddiff = getattr(raidhist, d)
                     raiddiff = killedtoday[d]
@@ -203,7 +206,7 @@ class ProgressBuilder(webapp2.RequestHandler):
                         break
 
             progress[raidname].append(bossobj)
-            
+
     def finishBuilding(self):
 
         # update the last updated for the whole dataset.  don't actually
@@ -234,8 +237,7 @@ class ProgressBuilder(webapp2.RequestHandler):
 
             # if there were results, grab the entries for the day and sort
             # them by group name
-            updates = r[0].updates
-            updates = sorted(updates, key=lambda k: k.group)
+            updates = sorted(r, key=lambda k: k.group)
 
             template = 'CtR group <%s> killed %d new bosses in %s %s to be %d/%d%s!'
             for u in updates:
@@ -243,27 +245,28 @@ class ProgressBuilder(webapp2.RequestHandler):
                 # Skip this update if it's already been tweeted
                 if u.tweeted == True:
                     continue
-                
+
                 # mark this update as tweeted to avoid reposts
                 u.tweeted = True
 
                 for raid in [('hfc',Constants.hfcname,Constants.hfcbosses),
                              ('brf',Constants.brfname,Constants.brfbosses),
                              ('hm',Constants.hmname,Constants.hmbosses)]:
-                             
-                    raidhist=getattr(u, raid[0])
-                    for d in reversed(Constants.difficulties):
 
-                        kills = getattr(raidhist, d)
-                        total = getattr(raidhist, d+'_total')
-                        if len(kills != 0):
-                            text = template % (u.group, len(kills), d.title(),
-                                               raid[1], total, len(raid[2]),
-                                               d.title[0])
-                            if (d == 'heroic' or d == 'mythic') and total == len(raid[2]):
-                                text = text + ' #aotc'
-                            print text
-                            tw_client.PostUpdate(text)
+                    raidhist=getattr(u, raid[0])
+                    if raidhist != None:
+                        for d in reversed(Constants.difficulties):
+                            
+                            kills = getattr(raidhist, d)
+                            total = getattr(raidhist, d+'_total')
+                            if len(kills) != 0:
+                                text = template % (u.group, len(kills), d.title(),
+                                                   raid[1], total, len(raid[2]),
+                                                   d.title()[0])
+                                if (d == 'heroic' or d == 'mythic') and total == len(raid[2]):
+                                    text = text + ' #aotc'
+                                print text
+                                tw_client.PostUpdate(text)
 
             # Update the history entry in ndb so that the 'tweeted' flags
             # all get marked as true
@@ -305,8 +308,8 @@ class Ranker(webapp2.RequestHandler):
             # Blizzard API queries under control.
             q = Group.query()
             groups = q.fetch()
-            for g in groups:
-                taskqueue.add(url='/builder', params={'group':g.name})
+#            for g in groups:
+#                taskqueue.add(url='/builder', params={'group':g.name})
 
             checker = Task(url='/builder', params={'group':'ctrp-taskcheck'})
             taskcheck = Queue(name='taskcheck')

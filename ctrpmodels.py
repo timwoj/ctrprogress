@@ -81,9 +81,9 @@ class Global(ndb.Model):
     lastupdated = ndb.DateTimeProperty(auto_now=True)
 
 class RaidHistory(ndb.Model):
-    mythic = ndb.StringProperty(repeated=True)
-    heroic = ndb.StringProperty(repeated=True)
-    normal = ndb.StringProperty(repeated=True)
+    mythic = ndb.StringProperty(repeated=True, required = True)
+    heroic = ndb.StringProperty(repeated=True, required = True)
+    normal = ndb.StringProperty(repeated=True, required = True)
     mythic_total = ndb.IntegerProperty(default = 0)
     heroic_total = ndb.IntegerProperty(default = 0)
     normal_total = ndb.IntegerProperty(default = 0)
@@ -91,9 +91,9 @@ class RaidHistory(ndb.Model):
 class History(ndb.Model):
     group = ndb.StringProperty(required = True)
     date = ndb.DateProperty(required = True)
-    hfc = ndb.StructuredProperty(RaidHistory)
-    brf = ndb.StructuredProperty(RaidHistory)
-    hm = ndb.StructuredProperty(RaidHistory)
+    hfc = ndb.StructuredProperty(RaidHistory, required = True)
+    brf = ndb.StructuredProperty(RaidHistory, required = True)
+    hm = ndb.StructuredProperty(RaidHistory, required = True)
     tweeted = ndb.BooleanProperty(default = False, required = True)
 
 class Mergev1tov2(webapp2.RequestHandler):
