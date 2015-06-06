@@ -239,7 +239,9 @@ class ProgressBuilder(webapp2.RequestHandler):
             # them by group name
             updates = sorted(r, key=lambda k: k.group)
 
-            template = 'CtR group <%s> killed %d new bosses in %s %s to be %d/%d%s!'
+            template = 'CtR group <%s> killed %d new boss(es) in %s %s to be %d/%d%s!'
+            template_start = 'CtR group <%s> killed %d new boss'
+            template_end = ' in %s %s to be %d/%d%s!'
             for u in updates:
 
                 # Skip this update if it's already been tweeted
@@ -260,10 +262,12 @@ class ProgressBuilder(webapp2.RequestHandler):
                             kills = getattr(raidhist, d)
                             total = getattr(raidhist, d+'_total')
                             if len(kills) != 0:
-                                text = template % (u.group, len(kills), d.title(),
-                                                   raid[1], total, len(raid[2]),
-                                                   d.title()[0])
-                                if (d == 'heroic' or d == 'mythic') and total == len(raid[2]):
+                                text = template_start % (u.group, len(kills))
+                                if len(kills) > 1:
+                                    text += "es"
+                                text+= template_end % (d.title(), raid[1], total,
+                                                       len(raid[2]), d.title()[0])
+                                if (d != 'normal') and total == len(raid[2]):
                                     text = text + ' #aotc'
                                 print text
                                 tw_client.PostUpdate(text)
