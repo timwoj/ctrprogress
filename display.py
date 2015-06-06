@@ -29,7 +29,7 @@ class Display(webapp2.RequestHandler):
         groups = ctrpmodels.Group.query_for_t17_display()
         for group in groups:
             template_values = {'group' : group}
-            template = JINJA_ENVIRONMENT.get_template('templates/group.html')
+            template = JINJA_ENVIRONMENT.get_template('templates/group-t17.html')
             self.response.write(template.render(template_values))
 
         self.response.write('</table>\n')
