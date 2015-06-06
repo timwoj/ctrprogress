@@ -1,19 +1,20 @@
 {%- macro addentry(name, diff, diffchar, raidsize, kills, total) -%}
-{% if kills|length > 0 %}
-Killed <b>
-  {%- for k in kills -%}
-    {%- if kills|length == 1 -%}
-      {{ k }}
-    {%- else -%}
-      {%- if loop.index == kills|length -%}
-        and {{ k }}
-      {%- else -%}
-        {{ k }}{%- if kills|length != 2 %}, {% endif -%}
-      {%- endif -%}
-    {%- endif -%}
-  {%- endfor -%}
-  </b> in {{ diff }} {{ name }} and is now <b>{{ total }}/{{ raidsize }}{{ diffchar }}</b><br/>
-{%- endif %}
+{%- if kills|length > 0 -%}
+Killed
+  {%- if kills|length == 1 -%}
+  <b> {{ kills[0] }}</b>
+  {%- else -%}
+  <b> {{ kills|length }}</b> bosses
+  {%- endif -%}
+</b> in {{ diff }} {{ name }} and is now <b>{{ total }}/{{ raidsize }}{{ diffchar }}</b><br/>
+{%- if kills|length > 1 -%}
+<div style="margin-left:15px;font-weight:bold">
+  {%- for k in kills %}
+  {{ k }}</br>
+{% endfor %}
+</div>
+{%- endif -%}
+{%- endif -%}
 {%- endmacro -%}
 <tr>
   <td class="history-group-header">{{ history.group }}</td>
