@@ -82,7 +82,7 @@ class Importer:
         # API. This used to use the urlfetch async methods but I need finer
         # control over how many are running at a time since I'm bumping against
         # the API's quotas for free accounts.
-        executor = futures.ThreadPoolExecutor(max_workers=10)
+        executor = futures.ThreadPoolExecutor(max_workers=7)
         fs = dict()
 
         # Request all of the toon data from the blizzard API and determine the
