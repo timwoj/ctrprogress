@@ -1,0 +1,32 @@
+{%- macro addentry(name, diff, diffchar, raidsize, kills, total) -%}
+{%- if kills|length > 0 -%}
+Killed
+  {%- if kills|length == 1 -%}
+  <b> {{ kills[0] }}</b>
+  {%- else -%}
+  <b> {{ kills|length }}</b> bosses
+  {%- endif -%}
+</b> in {{ diff }} {{ name }} and is now <b>{{ total }}/{{ raidsize }}{{ diffchar }}</b><br/>
+{%- if kills|length > 1 -%}
+<div style="margin-left:15px;font-weight:bold">
+  {%- for k in kills %}
+  {{ k }}</br>
+{% endfor %}
+</div>
+{%- endif -%}
+{%- endif -%}
+{%- endmacro -%}
+<tr>
+  <td class="history-group-header">{{ history.date }}</td>
+  <td style="padding-left:10px">
+    {{- addentry('Hellfire Citadel', 'Mythic', 'M', num_hfc_bosses, history.hfc.mythic, history.hfc.mythic_total) -}}
+    {{- addentry('Hellfire Citadel', 'Heroic', 'H', num_hfc_bosses, history.hfc.heroic, history.hfc.heroic_total) -}}
+    {{- addentry('Hellfire Citadel', 'Normal', 'N', num_hfc_bosses, history.hfc.normal, history.hfc.normal_total) -}}
+    {{- addentry('Blackrock Foundry', 'Mythic', 'M', num_brf_bosses, history.brf.mythic, history.brf.mythic_total) -}}
+    {{- addentry('Blackrock Foundry', 'Heroic', 'H', num_brf_bosses, history.brf.heroic, history.brf.heroic_total) -}}
+    {{- addentry('Blackrock Foundry', 'Normal', 'N', num_brf_bosses, history.brf.normal, history.brf.normal_total) -}}
+    {{- addentry('Highmaul', 'Mythic', 'M', num_hm_bosses, history.hm.mythic, history.hm.mythic_total) -}}
+    {{- addentry('Highmaul', 'Heroic', 'H', num_hm_bosses, history.hm.heroic, history.hm.heroic_total) -}}
+    {{- addentry('Highmaul', 'Normal', 'N', num_hm_bosses, history.hm.normal, history.hm.normal_total) }}
+  </td>
+</tr>

@@ -128,6 +128,14 @@ class DisplayText(webapp2.RequestHandler):
 
 class DisplayHistory(webapp2.RequestHandler):
     def get(self):
+        groupname = self.request.get('group')
+        print groupname
+        if (groupname == None or len(groupname) == 0):
+            self.displayFullHistory()
+        else:
+            self.displayGroup(groupname)
+
+    def displayFullHistory(self):
         q = ctrpmodels.Global.query()
         r = q.fetch()
 
@@ -152,9 +160,11 @@ class DisplayHistory(webapp2.RequestHandler):
 
         for i in range(0,13):
             self.response.write('<tr><td colspan="2" class="history-date">'+str(curdate)+'</td></tr>\n')
-            q = ctrpmodels.History.query(ctrpmodels.History.date == curdate)
-            r = q.fetch()
-            if (len(r) == 0):
+
+            # Retrieve all of the entires for this date ordered by group name
+            q = ctrpmodels.History.query(ctrpmodels.History.date == curdate).order(ctrpmodels.History.group)
+            updates = q.fetch()
+            if (len(updates) == 0):
                 # if there were no results for this date, add just a simple
                 # entry displaying nothing
                 self.response.write('<tr>')
@@ -170,9 +180,8 @@ class DisplayHistory(webapp2.RequestHandler):
                     self.response.write('No new kills for this date!')
                 self.response.write('</td>')
                 self.response.write('</tr>\n')
+                
             else:
-                # if there were results, sort them by group name
-                updates = sorted(r, key=lambda entry: entry.group)
 
                 # now loop through the groups and output the updates in some
                 # fashion.  sort the updates BRF -> HM, then M -> H -> N
@@ -192,6 +201,49 @@ class DisplayHistory(webapp2.RequestHandler):
             curdate -= oneday
 
         self.response.write('</table>\n')
+        template_values = {}
+        template = JINJA_ENVIRONMENT.get_template('templates/footer.html')
+        self.response.write(template.render(template_values))
+
+    def displayGroup(self, groupname):
+        q = ctrpmodels.Global.query()
+        r = q.fetch()
+
+        lastupdated = r[0].lastupdated
+
+        template_values = {
+            'last_updated': r[0].lastupdated,
+            'title' : 'History'
+        }
+        template = JINJA_ENVIRONMENT.get_template('templates/header.html')
+        self.response.write(template.render(template_values))
+
+        # Record all history for this group that has been recorded sorted by the
+        # date
+        q = ctrpmodels.History.query(ctrpmodels.History.group == groupname).order(-ctrpmodels.History.date)
+        entries = q.fetch()
+
+        if (len(entries) == 0):
+            self.response.write('No history recorded for group %s' % groupname)
+        else:
+            self.response.write('<div class="history-date">%s</div><p/>' % groupname)
+            # add the beginnings of the table
+            self.response.write('<table style="margin-left:50px;margin-right:50px">\n')
+
+            for u in entries:
+                template_values = {
+                    'history': u,
+                    'num_brf_bosses': ctrpmodels.Constants.num_brf_bosses,
+                    'num_hm_bosses': ctrpmodels.Constants.num_hm_bosses,
+                    'num_hfc_bosses': ctrpmodels.Constants.num_hfc_bosses,
+                }
+                template = JINJA_ENVIRONMENT.get_template(
+                    'templates/group-history.html')
+                self.response.write(template.render(template_values))
+                self.response.write('\n')
+
+            self.response.write('</table>\n')
+            
         template_values = {}
         template = JINJA_ENVIRONMENT.get_template('templates/footer.html')
         self.response.write(template.render(template_values))
