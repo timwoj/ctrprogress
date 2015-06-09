@@ -33,6 +33,6 @@ indexes:
 
 - kind: History
   properties:
-  - name: group
   - name: date
-    direction: desc
+  - name: tweeted
+  - name: group

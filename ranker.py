@@ -233,9 +233,14 @@ class ProgressBuilder(webapp2.RequestHandler):
 
         # post any changes that happened with the history to twitter
         curdate = datetime.date.today()
-        q = ctrpmodels.History.query(ctrpmodels.History.date == curdate)
-        r = q.fetch()
-        if len(r) != 0:
+
+        # query for all of the history updates for today that haven't been
+        # tweeted yet sorted by group name
+        q = ctrpmodels.History.query(ndb.AND(ctrpmodels.History.date == curdate,
+                                             ctrpmodels.History.tweeted == False)).order(ctrpmodels.History.group)
+        updates = q.fetch()
+        
+        if len(updates) != 0:
             path = os.path.join(os.path.split(__file__)[0],'api-auth.json')
             json_data = json.load(open(path))
 
@@ -246,18 +251,10 @@ class ProgressBuilder(webapp2.RequestHandler):
                 access_token_secret=json_data['twitter_access_secret'],
                 cache=None)
 
-            # if there were results, grab the entries for the day and sort
-            # them by group name
-            updates = sorted(r, key=lambda k: k.group)
-
             template = 'CtR group <%s> killed %d new boss(es) in %s %s to be %d/%d%s!'
             template_start = 'CtR group <%s> killed %d new boss'
             template_end = ' in %s %s to be %d/%d%s!'
             for u in updates:
-
-                # Skip this update if it's already been tweeted
-                if u.tweeted == True:
-                    continue
 
                 # mark this update as tweeted to avoid reposts
                 u.tweeted = True
@@ -283,9 +280,9 @@ class ProgressBuilder(webapp2.RequestHandler):
                                 print text
                                 tw_client.PostUpdate(text)
 
-            # Update the history entry in ndb so that the 'tweeted' flags
-            # all get marked as true
-            r[0].put()
+                # update the entry in the database so that the tweeted flag
+                # gets set to true
+                u.put()
 
     def loadone(self):
         group = self.request.get('group')
