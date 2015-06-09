@@ -3,7 +3,7 @@
 #!/usr/bin/env python
 
 # External imports
-import webapp2,jinja2,os,datetime,json
+import webapp2,jinja2,os,datetime,json,time
 import logging
 import twitter
 
@@ -106,12 +106,15 @@ class ProgressBuilder(webapp2.RequestHandler):
                 if data_boss.normaldead != None and group_boss.normaldead == None:
                     killedtoday['normal'].append(data_boss.name)
                     group_boss.normaldead = data_boss.normaldead
+                    logging.debug('new normal kill of %s' % data_boss.name)
                 if data_boss.heroicdead != None and group_boss.heroicdead == None:
                     killedtoday['heroic'].append(data_boss.name)
                     group_boss.heroicdead = data_boss.heroicdead
+                    logging.debug('new heroic kill of %s' % data_boss.name)
                 if data_boss.mythicdead != None and group_boss.mythicdead == None:
                     killedtoday['mythic'].append(data_boss.name)
                     group_boss.mythicdead = data_boss.mythicdead
+                    logging.debug('new mythic kill of %s' % data_boss.name)
 
             for d in Constants.difficulties:
                 old = getattr(group_raid, d)
@@ -120,12 +123,20 @@ class ProgressBuilder(webapp2.RequestHandler):
                     if (new_hist == None):
                         new_hist = ctrpmodels.History(group=group.name)
                         new_hist.date = datetime.date.today()
+                        new_hist.hm = ctrpmodels.RaidHistory()
+                        new_hist.hm.mythic = list()
+                        new_hist.hm.heroic = list()
+                        new_hist.hm.normal = list()
+                        new_hist.brf = ctrpmodels.RaidHistory()
+                        new_hist.brf.mythic = list()
+                        new_hist.brf.heroic = list()
+                        new_hist.brf.normal = list()
+                        new_hist.hfc = ctrpmodels.RaidHistory()
+                        new_hist.hfc.mythic = list()
+                        new_hist.hfc.heroic = list()
+                        new_hist.hfc.normal = list()
+                        
                     raidhist = getattr(new_hist, raid[0])
-                    if (raidhist == None):
-                        raidhist = ctrpmodels.RaidHistory()
-                        raidhist.mythic = list()
-                        raidhist.heroic = list()
-                        raidhist.normal = list()
 
                     raiddiff = getattr(raidhist, d)
                     raiddiff = killedtoday[d]
@@ -312,8 +323,8 @@ class Ranker(webapp2.RequestHandler):
             # Blizzard API queries under control.
             q = Group.query()
             groups = q.fetch()
-#            for g in groups:
-#                taskqueue.add(url='/builder', params={'group':g.name})
+            for g in groups:
+                taskqueue.add(url='/builder', params={'group':g.name})
 
             checker = Task(url='/builder', params={'group':'ctrp-taskcheck'})
             taskcheck = Queue(name='taskcheck')

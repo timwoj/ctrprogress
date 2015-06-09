@@ -81,12 +81,12 @@ class Global(ndb.Model):
     lastupdated = ndb.DateTimeProperty(auto_now=True)
 
 class RaidHistory(ndb.Model):
-    mythic = ndb.StringProperty(repeated=True, required = True)
-    heroic = ndb.StringProperty(repeated=True, required = True)
-    normal = ndb.StringProperty(repeated=True, required = True)
-    mythic_total = ndb.IntegerProperty(default = 0)
-    heroic_total = ndb.IntegerProperty(default = 0)
-    normal_total = ndb.IntegerProperty(default = 0)
+    mythic = ndb.StringProperty(repeated=True)
+    heroic = ndb.StringProperty(repeated=True)
+    normal = ndb.StringProperty(repeated=True)
+    mythic_total = ndb.IntegerProperty(default = 0, required = True)
+    heroic_total = ndb.IntegerProperty(default = 0, required = True)
+    normal_total = ndb.IntegerProperty(default = 0, required = True)
 
 class History(ndb.Model):
     group = ndb.StringProperty(required = True)
