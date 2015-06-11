@@ -36,6 +36,7 @@ class ProgressBuilder(webapp2.RequestHandler):
             default_queue = Queue()
             stats = default_queue.fetch_statistics()
             while stats.tasks > 0:
+                logging.info("task check: waiting for %d tasks to finish" % stats.tasks)
                 time.sleep(5)
                 stats = default_queue.fetch_statistics()
 
