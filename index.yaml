@@ -26,6 +26,16 @@ indexes:
     direction: desc
   - name: name
 
+- kind: Group
+  properties:
+  - name: hfc.mythic
+    direction: desc
+  - name: hfc.heroic
+    direction: desc
+  - name: hfc.normal
+    direction: desc
+  - name: name
+
 - kind: History
   properties:
   - name: date

@@ -14,11 +14,11 @@ class Constants:
     hmname = 'Highmaul'
     brfname = 'Blackrock Foundry'
     hfcname = 'Hellfire Citadel'
-    
+
     raids = [hmname, brfname, hfcname]
 
     difficulties = ['normal','heroic','mythic']
-    
+
     hmbosses = ['Kargath Bladefist','The Butcher','Brackenspore','Tectus','Twin Ogron','Ko\'ragh','Imperator Mar\'gok']
     brfbosses = ['Oregorger','Gruul','The Blast Furnace','Hans\'gar and Franzok','Flamebender Ka\'graz','Kromog','Beastlord Darmac','Operator Thogar','The Iron Maidens','Blackhand']
     hfcbosses = ['Hellfire Assault','The Iron Reaver','Hellfire High Council','Kormrok','Kilrogg Deadeye','The Monstrous Gorefiend','Shadow-Lord Iskar','Fel Lord Zakuun','Xhul\'horac','Socrethar the Eternal','Tyrant Velhari','Mannoroth','Archimonde']
@@ -60,7 +60,7 @@ class Group(ndb.Model):
     lastupdated = ndb.DateTimeProperty()
     rosterupdated = ndb.DateProperty()
     avgilvl = ndb.IntegerProperty(default = 0)
-    
+
     # Query used in display.py to get a consistent set of data for both the graphical
     # and text displays.  This is for tier 17 data (HM, BRF)
     @classmethod
@@ -104,6 +104,7 @@ class Mergev1tov2(webapp2.RequestHandler):
         for group in groups:
             # add the hfc raid data
             if group.hfc == None:
+                self.response.write('%s: added HFC entry<br/>\n' % group.name)
                 group.hfc = Raid()
                 group.hfc.raidname = 'Hellfire Citadel'
                 group.hfc.bosses = list()
@@ -112,31 +113,40 @@ class Mergev1tov2(webapp2.RequestHandler):
                     group.hfc.bosses.append(newboss)
 
             if group.brf.bosses == None or len(group.brf.bosses) == 0:
+                self.response.write('%s: fixed BRF entry<br/>\n' % group.name)
                 group.brf.bosses = list()
                 for boss in Constants.brfbosses:
                     newboss = Boss(name = boss)
                     group.brf.bosses.append(newboss)
-                        
+
             if group.hm.bosses == None or len(group.hm.bosses) == 0:
+                self.response.write('%s: fixed HM entry<br/>\n' % group.name)
                 group.hm.bosses = list()
                 for boss in Constants.hmbosses:
                     newboss = Boss(name = boss)
                     group.hm.bosses.append(newboss)
-                        
+
             # remove obsolete fields from the data table
             if 'numbosses' in group.hm._properties:
                 del group.hm._properties['numbosses']
+                self.response.write('%s: Removed HM numbosses property<br/>\n' % group.name)
             if 'numbosses' in group.brf._properties:
                 del group.brf._properties['numbosses']
+                self.response.write('%s: Removed BRF numbosses property<br/>\n' % group.name)
             if 'raidname' in group.hm._properties:
                 del group.hm._properties['raidname']
+                self.response.write('%s: Removed HM raid name property<br/>\n' % group.name)
             if 'raidname' in group.brf._properties:
                 del group.brf._properties['raidname']
+                self.response.write('%s: Removed BRF raid name property<br/>\n' % group.name)
             if 'rosterupdate' in group._properties:
                 del group._properties['rosterupdate']
+                self.response.write('%s: Removed rosterupdate property<br/>\n' % group.name)
 
             # set the rosterupdated field to something in the past so that they
             # all get updated in the next pass through.
             group.rosterupdated = datetime.datetime.strptime('20140101','%Y%m%d').date()
-                
+            self.response.write('%s: Updated rosterupdated field to old date<br/>\n' % group.name)
+
             group.put()
+            self.response.write('%s: Done with this group<br/><br/>\n\n' % group.name)

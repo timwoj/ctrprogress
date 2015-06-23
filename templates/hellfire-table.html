@@ -6,19 +6,19 @@
   </thead>
   <tbody>
     <tr>
-      <td class="hfcheaderchiclet hfcmythicheader" ttid="{{ group.name | normalize }}-hfc-mythic-header">Mythic {{ group.hfc.mythic }}/10</td>
+      <td class="hfcheaderchiclet hfcmythicheader" ttid="{{ group.name | normalize }}-hfc-mythic-header">Mythic {{ group.hfc.mythic }}/13</td>
       {% for n in range(13) -%}
       <td><img src="../resources/hfc-chiclet-mythic.png" height="32" width="33"{% if group.hfc.mythic < n+1 %} style="opacity:0.25"{% endif %}/></td>
       {% endfor -%}
     </tr>
     <tr>
-      <td class="hfcheaderchiclet hfcheroicheader" ttid="{{ group.name | normalize }}-hfc-heroic-header">Heroic {{ group.hfc.heroic }}/10</td>
+      <td class="hfcheaderchiclet hfcheroicheader" ttid="{{ group.name | normalize }}-hfc-heroic-header">Heroic {{ group.hfc.heroic }}/13</td>
       {% for n in range(13) -%}
       <td><img src="../resources/hfc-chiclet-heroic.png" height="32" width="33"{% if group.hfc.heroic < n+1 %} style="opacity:0.25"{% endif %}/></td>
       {% endfor -%}
     </tr>
     <tr>
-      <td class="hfcheaderchiclet hfcnormalheader" ttid="{{ group.name | normalize }}-hfc-normal-header">Normal {{ group.hfc.normal }}/10</td>
+      <td class="hfcheaderchiclet hfcnormalheader" ttid="{{ group.name | normalize }}-hfc-normal-header">Normal {{ group.hfc.normal }}/13</td>
       {% for n in range(13) -%}
       <td><img src="../resources/hfc-chiclet-normal.png" height="32" width="33"{% if group.hfc.normal < n+1 %} style="opacity:0.25"{% endif %}/></td>
       {% endfor -%}

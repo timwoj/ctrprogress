@@ -26,10 +26,10 @@ class Display(webapp2.RequestHandler):
 
         self.response.write('<table>\n')
 
-        groups = ctrpmodels.Group.query_for_t17_display()
+        groups = ctrpmodels.Group.query_for_t18_display()
         for group in groups:
             template_values = {'group' : group}
-            template = JINJA_ENVIRONMENT.get_template('templates/group-t17.html')
+            template = JINJA_ENVIRONMENT.get_template('templates/group-t18.html')
             self.response.write(template.render(template_values))
 
         self.response.write('</table>\n')
@@ -47,8 +47,8 @@ class Display(webapp2.RequestHandler):
         self.response.write('content: function() {\n')
         self.response.write('var tooltips = {};\n')
         
-        groups = ctrpmodels.Group.query_for_t17_display()
-        for raid in ['hm','brf']:
+        groups = ctrpmodels.Group.query_for_t18_display()
+        for raid in ['hfc']:
             for group in groups:
                 normaltext = ""
                 heroictext = ""
@@ -109,12 +109,11 @@ class DisplayText(webapp2.RequestHandler):
         # get the group data from the datastore, and order it in decreasing order
         # so that further progressed teams show up first.  break ties by
         # alphabetical order of group names
-        groups = ctrpmodels.Group.query_for_t17_display()
+        groups = ctrpmodels.Group.query_for_t18_display()
 
         for group in groups:
             self.response.write('%s (Avg ilvl: %d)<br/>' % (group.name,group.avgilvl))
-            self.writeProgress(group.brf)
-            self.writeProgress(group.hm)
+            self.writeProgress(group.hfc)
             self.response.write('<br/>')
         template_values = {}
         template = JINJA_ENVIRONMENT.get_template('templates/footer.html')
@@ -184,7 +183,7 @@ class DisplayHistory(webapp2.RequestHandler):
             else:
 
                 # now loop through the groups and output the updates in some
-                # fashion.  sort the updates BRF -> HM, then M -> H -> N
+                # fashion
                 for u in updates:
 
                     template_values = {

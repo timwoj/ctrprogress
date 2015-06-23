@@ -63,8 +63,7 @@ class ProgressBuilder(webapp2.RequestHandler):
         importer.load(group.toons, data)
 
         progress = dict()
-        self.parse(Constants.hmbosses, data, Constants.hmname, progress, writeDB)
-        self.parse(Constants.brfbosses, data, Constants.brfname, progress, writeDB)
+        self.parse(Constants.hfcbosses, data, Constants.hfcname, progress, writeDB)
 
         # calculate the avg ilvl values from the toon data
         group.avgilvl = 0
@@ -91,8 +90,7 @@ class ProgressBuilder(webapp2.RequestHandler):
         # build all of the points of data that are needed.  First, update which
         # bosses have been killed for a group, then loop through the
         # difficulties and build the killed counts and the history.
-        for raid in [('brf',Constants.brfname,Constants.brfbosses),
-                     ('hm',Constants.hmname,Constants.hmbosses)]:
+        for raid in [('hfc',Constants.hfcname,Constants.hfcbosses)]:
 
             group_raid = getattr(group, raid[0])
             data_raid = progress[raid[1]]
@@ -344,10 +342,8 @@ class Test(webapp2.RequestHandler):
 
             progress = dict()
             rank = ProgressBuilder()
-            rank.parse(Constants.difficulties, Constants.hmbosses,
-                       data, 'Highmaul', progress)
-            rank.parse(Constants.difficulties, Constants.brfbosses,
-                       data, 'Blackrock Foundry', progress)
+            rank.parse(Constants.difficulties, Constants.hfcbosses,
+                       data, Constants.hfcname, progress)
             logging.info("Finished parsing data")
 
             logging.info(progress)
