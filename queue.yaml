@@ -1,0 +1,7 @@
+queue:
+- name: default
+  rate: 1/s
+  max_concurrent_requests: 6
+- name: taskcheck
+  rate: 1/s
+  max_concurrent_requests: 1

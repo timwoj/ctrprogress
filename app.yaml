@@ -1,4 +1,4 @@
-application: ctraidprogress
+application: ctrptest
 version: 1
 runtime: python27
 api_version: 1
@@ -28,7 +28,10 @@ handlers:
 - url: /howitworks\.html
   static_files: templates/howitworks.html
   upload: templates/howitworks\.html
-
+- url: /tier17\.html
+  static_files: templates/tier17.html
+  upload: templates/tier17\.html
+  
 - url: /startrank
   script: main.app
   login: admin
@@ -45,6 +48,10 @@ handlers:
   script: main.app
   login: admin
 
+- url: /mergedb
+  script: main.app
+  login: admin
+
 - url: .*
   script: main.app
 
@@ -54,4 +61,8 @@ libraries:
 - name: lxml
   version: "latest"
 - name: jinja2
+  version: latest
+- name: pycrypto
+  version: latest
+- name: ssl
   version: latest

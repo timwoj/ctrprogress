@@ -18,19 +18,23 @@ import webapp2
 import json
 import logging
 import os
+import datetime
+
+# Need this stuff to do oauth with GAE
+import httplib2
+from oauth2client.client import SignedJwtAssertionCredentials
+from apiclient.discovery import build
 
 # need this stuff for the google data API
-try:
-  from xml.etree import ElementTree
-except ImportError:
-  from elementtree import ElementTree
-import gdata.spreadsheet.service
-import gdata.service
-import atom.service
-import gdata.spreadsheet
-import atom
+import gdata.spreadsheets
+import gdata.spreadsheets.client
+import gdata.gauth
+import gdata.alt.appengine
 
-import ranker
+from ctrpmodels import Constants
+from ctrpmodels import Group
+from ctrpmodels import Raid
+from ctrpmodels import Boss
 
 import time
 from concurrent import futures
@@ -60,16 +64,17 @@ def worker(g, feed, client, curr_key):
     # each tr is a row in the table.  we care about columns 4-6, which are
     # the character name, the server, and the role.
     for i,entry in enumerate(sheet.entry):
+
         # get the text from the cells for this row that we care about,
         # assuming none of them are empty
-        if entry.custom['charactername'].text == None or entry.custom['server'].text == None:
+        if entry.get_value('charactername') == None or entry.get_value('server') == None:
             continue
 
-        toon = entry.custom['charactername'].text.encode('utf-8','ignore')
+        toon = entry.get_value('charactername').encode('utf-8','ignore')
         if len(toon) == 0:
             continue
 
-        realm = entry.custom['server'].text.encode('utf-8','ignore')
+        realm = entry.get_value('server').encode('utf-8','ignore')
         if realm != 'Aerie Peak':
             toon += '/%s' % realm
         else:
@@ -84,7 +89,7 @@ def worker(g, feed, client, curr_key):
     # Check if this group already exists in the datastore.  We don't
     # want to overwrite existing progress data for a group if we don't
     # have to.
-    query = ranker.Group.query(ranker.Group.name == g)
+    query = Group.query(Group.name == g)
     results = query.fetch(1)
 
     responsetext = ''
@@ -95,25 +100,42 @@ def worker(g, feed, client, curr_key):
         # there's no real reason to create groups with only that many
         # toons.
         if (len(toons) >= 5):
-            newgroup = ranker.Group(name=g)
-            newgroup.brf = ranker.Progression(raidname="Blackrock Foundry",
-                                              numbosses=10)
-            newgroup.hm = ranker.Progression(raidname="Highmaul",
-                                             numbosses=7)
+            newgroup = Group(name=g)
+            newgroup.brf = Raid()
+            newgroup.brf.bosses = list()
+            for boss in Constants.brfbosses:
+                newboss = Boss(name = boss)
+                newgroup.brf.bosses.append(newboss)
+            
+            newgroup.hm = Raid()
+            newgroup.hm.bosses = list()
+            for boss in Constants.hmbosses:
+                newboss = Boss(name = boss)
+                newgroup.hm.bosses.append(newboss)
+            
+            newgroup.hfc = Raid()
+            newgroup.hfc.bosses = list()
+            for boss in Constants.hfcbosses:
+                newboss = Boss(name = boss)
+                newgroup.hfc.bosses.append(newboss)
+
             newgroup.toons = toons
+            newgroup.rosterupdated = datetime.date.today()
+                        
             newgroup.put()
-            responsetext = 'Added new group %s with %d toons<br/>\n' % (g,len(toons))
+            responsetext = 'Added group %s with %d toons' % (g,len(toons))
             loggroup = 'Added'
         else:
-            responsetext = 'New group %s only has %d toons and was not included<br/>\n' % (g, len(toons))
+            responsetext = 'New group %s only has %d toons and was not included' % (g, len(toons))
             loggroup = 'Skipped'
     else:
         # the group already exists and all we need to do is update the
         # toon list.  all of the other data stays the same.
         existing = results[0]
         existing.toons = toons
+        existing.rosterupdated = datetime.date.today()
         existing.put()
-        responsetext = 'Updated existing group %s with %d toons<br/>\n' % (g,len(toons))
+        responsetext = 'Updated group %s with %d toons' % (g,len(toons))
         loggroup = 'Updated'
 
     t6 = time.time()
@@ -121,41 +143,67 @@ def worker(g, feed, client, curr_key):
     logging.info('time spent getting toons for %s: %s' % (g, (t5-t4)))
     logging.info('time spent updating db for %s: %s' % (g, (t6-t5)))
 
-    gc.collect()
     return (loggroup, len(toons), responsetext)
 
 class RosterBuilder(webapp2.RequestHandler):
 
     def get(self):
 
+        self.response.write('<html><head><title>Roster Update</title></head><body>')
+
         path = os.path.join(os.path.split(__file__)[0],'api-auth.json')
-        json_key = json.load(open(path))
-        gd_client = gdata.spreadsheet.service.SpreadsheetsService()
-        gd_client.email = json_key['email']
-        gd_client.password = json_key['password']
-        gd_client.ProgrammaticLogin()
+        auth_data = json.load(open(path))
+
+        path = os.path.join(os.path.split(__file__)[0],'oauth_private_key.pem')
+        with open(path) as keyfile:
+          private_key = keyfile.read()
+        
+        credentials = SignedJwtAssertionCredentials(
+          auth_data['oauth_client_email'],
+          private_key,
+          scope=(
+            'https://www.googleapis.com/auth/drive',
+            'https://spreadsheets.google.com/feeds',
+            'https://docs.google.com/feeds',
+          ))
+        http_auth = credentials.authorize(httplib2.Http())
+        authclient = build('oauth2','v2',http=http_auth)
+
+        auth2token = gdata.gauth.OAuth2TokenFromCredentials(credentials)
+
+        gd_client = gdata.spreadsheets.client.SpreadsheetsClient()
+        gd_client = auth2token.authorize(gd_client)
+
         logging.info('logged in, grabbing main sheet')
 
         # Open the main roster feed
         roster_sheet_key = '1tvpsPzZCFupJkTT1y7RmMkuh5VsjBiiA7FvYruJbTtw'
-        feed = gd_client.GetWorksheetsFeed(roster_sheet_key)
-      
+        feed = gd_client.GetWorksheets(roster_sheet_key)
+        
         t1 = time.time()
+        logging.info('getting group names from dashboard')
+        
+        groupnames = list()
+        lastupdates = list()
+        
         # Grab various columns from the DASHBOARD sheet on the spreadsheet, but
         # ignore any groups that are marked as Disbanded.  This is better than
         # looping back through the data again to remove them.
-        logging.info('getting roster sheet')
         dashboard_id = getsheetID(feed, 'DASHBOARD')
         dashboard = gd_client.GetListFeed(roster_sheet_key, dashboard_id)
-
-        groupnames = list()
         for entry in dashboard.entry:
-            if entry.custom['teamstatus'].text != 'Disbanded':
-                groupnames.append(entry.custom['teamname'].text)
+            if entry.get_value('teamstatus') != 'Disbanded':
+                groupnames.append(entry.get_value('teamname'))
+                lastupdates.append(entry.get_value('lastrosterupdate'))
 
-        groups = sorted(groupnames)
+        # sort the lists by the names in the group list.  This is a slick use
+        # of zip.  it works by zipping the two lists into a single list of
+        # tuples containing the elements, sorting them, then unzipping them
+        # back into separate lists again.
+        groupnames, lastupdates = (list(t) for t in zip(*sorted(zip(groupnames,lastupdates))))
 
-        logging.info('num groups: %d' % len(groups))
+        print('num groups on dashboard: %d' % len(groupnames))
+
         t2 = time.time()
 
         groupcount = 0
@@ -165,13 +213,33 @@ class RosterBuilder(webapp2.RequestHandler):
         # Grab the list of groups already in the database.  Loop through and
         # delete any groups that don't exist in the list (it happens...) and
         # any groups that are now marked disbanded.  Groups listed in the
-        # history will remain even if they disband.
-        query = ranker.Group.query()
+        # history will remain even if they disband.  While we're looping, also
+        # remove any groups from the list to be processed that haven't had
+        # a roster update since the last time we did this.
+        query = Group.query().order(Group.name)
         results = query.fetch()
         for res in results:
-            if res.name not in groups:
+            if res.name not in groupnames:
                 responses.append(('Removed', 'Removed disbanded or non-existent team from database: %s' % res.name))
                 res.key.delete()
+
+            # while we're looping through the groups, also remove any groups
+            # from the list to be processed that haven't had a roster update
+            # since the last time we parsed groups.
+            try:
+                index = groupnames.index(res.name)
+            except ValueError:
+                continue
+
+            lastupdate = datetime.datetime.strptime(lastupdates[index], '%m/%d/%Y').date()
+            if res.rosterupdated != None and res.rosterupdated > lastupdate:
+                responses.append(('DateUnchanged', '%s hasn\'t been updated since last load (load: %s, update: %s)' % (res.name, res.rosterupdated, lastupdate)))
+                groupcount += 1
+                tooncount += len(res.toons)
+                del groupnames[index]
+                del lastupdates[index]
+
+        logging.info('num groups to process: %d' % len(groupnames))
 
         t3 = time.time()
 
@@ -182,19 +250,19 @@ class RosterBuilder(webapp2.RequestHandler):
         # rosters in parallel.  due to the memory limits on GAE, we only allow
         # 25 threads at a time.  this comes *really* close to hitting both the
         # limit on page-load time and the limit on memory.
-        executor = futures.ThreadPoolExecutor(max_workers=25)
+        executor = futures.ThreadPoolExecutor(max_workers=15)
 
         fs = dict()
-        for g in groups:
+        for g in groupnames:
             fs[executor.submit(worker, g, feed, gd_client, roster_sheet_key)] = g
 
         for future in futures.as_completed(fs):
             g = fs[future]
             if future.exception() is not None:
-                logging.info("%s generated an exception: %s" % (g, future.exception()))
+                logging.info('%s generated an exception: %s' % (g, future.exception()))
             else:
                 returnval = future.result()
-                responses.append((returnval[0],returnval[2]))
+                responses.append((returnval[0], returnval[2]))
                 if returnval[0] == 'Added' or returnval[0] == 'Updated':
                     groupcount += 1
                     tooncount += returnval[1]
@@ -218,6 +286,11 @@ class RosterBuilder(webapp2.RequestHandler):
         self.response.write('<h3>Raid groups skipped due to Size</h3>')
         skipped = sorted([x for x in responses if x[0] == 'Skipped'], key=lambda tup: tup[1])
         for i in skipped:
+            self.response.write('%s<br/>' % i[1])
+
+        self.response.write('<h3>Raid groups skipped due to Last Update Date</h3>')
+        updatedate = sorted([x for x in responses if x[0] == 'DateUnchanged'], key=lambda tup: tup[1])
+        for i in updatedate:
             self.response.write('%s<br/>' % i[1])
 
         t6 = time.time()

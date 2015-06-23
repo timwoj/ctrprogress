@@ -3,13 +3,52 @@
     src: url('../resources/FrizQuadrataStd.otf')
 }
 
+.group-header-name {
+    font-family:quadrata;
+    text-align:left;
+    font-size:24px;
+    padding-top:20px;
+}
+
+.group-header-ilvl {
+    font-family:quadrata;
+    text-align:right;
+    font-size:18px;
+    padding-top:20px;
+}
+
+.hfcheaderchiclet {
+    text-align:center;
+    width:110px;
+    height:33px;
+    background-size:110px 33px;
+    background-repeat:no-repeat;
+    background-position:0px 1px;
+    font-family:quadrata;
+    font-size:14px;
+}
+
+.hfcnormalheader {
+    background-image:url('../resources/hfc-header-normal.png');
+}
+
+.hfcheroicheader {
+    background-image:url('../resources/hfc-header-heroic.png');
+    color:white;
+}
+
+.hfcmythicheader {
+    background-image:url('../resources/hfc-header-mythic.png');
+    color:white;
+}
+
 .brfheaderchiclet {
     text-align:center;
     width:110px;
     height:33px;
     background-size:110px 33px;
     background-repeat:no-repeat;
-    background-position:center;
+    background-position:0px 1px;
     font-family:quadrata;
     font-size:14px;
 }
@@ -33,7 +72,7 @@
     height:33px;
     background-size:90px 33px;
     background-repeat:no-repeat;
-    background-position:center;
+    background-position:0px 1px;
     font-family:quadrata;
     font-size:14px;
 }
@@ -54,7 +93,13 @@
 .table-background {
     background-repeat:no-repeat;
     background-position:center;
-    border-spacing:5px 5px
+    border-spacing:5px 5px;
+    display:inline-block;
+}
+
+.hfc-background {
+    background-size:650px 180px;
+    background-image:url(../resources/hfc-background.png);
 }
 
 .brf-background {
@@ -65,7 +110,7 @@
 .hm-background {
     background-size:500px 180px;
     background-image:url(../resources/highmaul-background.png);
-    background-color:rgba(0, 0, 0, 0.5);
+    background-color:rgba(0, 0, 0, 0.1);
 }
 
 .table-header {
@@ -73,4 +118,34 @@
     color:white;
     font-family:quadrata;
     font-size:20px;
+}
+
+.ui-tooltip {
+    background:#303030;
+    color:white;
+}
+
+.bossdead {
+    font-family:quadrata;
+    font-size:14px;
+    text-decoration: line-through;
+    color:#A0A0A0
+}
+
+.bossalive{
+    font-family:quadrata;
+    font-size:14px;
+}
+
+.history-date {
+    padding-top:20px;
+    text-align:center;
+    font-weight:bold;
+    font-size:110%
+}
+
+.history-group-header {
+    text-align:left;
+    vertical-align:top;
+    white-space:nowrap
 }

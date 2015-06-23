@@ -6,34 +6,22 @@
   </thead>
   <tbody>
     <tr>
-      <td class="hmheaderchiclet hmmythicheader">Mythic {{ group.hm.mythic }}/7</td>
-      <td><img src="../resources/highmaul-chiclet-mythic.png"{% if group.hm.mythic < 1 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-mythic.png"{% if group.hm.mythic < 2 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-mythic.png"{% if group.hm.mythic < 3 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-mythic.png"{% if group.hm.mythic < 4 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-mythic.png"{% if group.hm.mythic < 5 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-mythic.png"{% if group.hm.mythic < 6 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-mythic.png"{% if group.hm.mythic < 7 %} style="opacity:0.25"{% endif %}/></td>
+      <td class="hmheaderchiclet hmmythicheader" ttid="{{ group.name | normalize }}-hm-mythic-header">Mythic {{ group.hm.mythic }}/7</td>
+      {% for n in range(7) -%}
+      <td><img src="../resources/highmaul-chiclet-mythic.png" height="32" width="33"{% if group.hm.mythic < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
     </tr>
     <tr>
-      <td class="hmheaderchiclet hmheroicheader">Heroic {{ group.hm.heroic }}/7</td>
-      <td><img src="../resources/highmaul-chiclet-heroic.png"{% if group.hm.heroic < 1 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-heroic.png"{% if group.hm.heroic < 2 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-heroic.png"{% if group.hm.heroic < 3 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-heroic.png"{% if group.hm.heroic < 4 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-heroic.png"{% if group.hm.heroic < 5 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-heroic.png"{% if group.hm.heroic < 6 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-heroic.png"{% if group.hm.heroic < 7 %} style="opacity:0.25"{% endif %}/></td>
+      <td class="hmheaderchiclet hmheroicheader" ttid="{{ group.name | normalize }}-hm-heroic-header">Heroic {{ group.hm.heroic }}/7</td>
+      {% for n in range(7) -%}
+      <td><img src="../resources/highmaul-chiclet-heroic.png" height="32" width="33"{% if group.hm.heroic < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
     </tr>
     <tr>
-      <td class="hmheaderchiclet hmnormalheader">Normal {{ group.hm.normal }}/7</td>
-      <td><img src="../resources/highmaul-chiclet-normal.png"{% if group.hm.normal < 1 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-normal.png"{% if group.hm.normal < 2 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-normal.png"{% if group.hm.normal < 3 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-normal.png"{% if group.hm.normal < 4 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-normal.png"{% if group.hm.normal < 5 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-normal.png"{% if group.hm.normal < 6 %} style="opacity:0.25"{% endif %}/></td>
-      <td><img src="../resources/highmaul-chiclet-normal.png"{% if group.hm.normal < 7 %} style="opacity:0.25"{% endif %}/></td>
+      <td class="hmheaderchiclet hmnormalheader" ttid="{{ group.name | normalize }}-hm-normal-header">Normal {{ group.hm.normal }}/7</td>
+      {% for n in range(7) -%}
+      <td><img src="../resources/highmaul-chiclet-normal.png" height="32" width="33"{% if group.hm.normal < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
     </tr>
   </tbody>
 </table>

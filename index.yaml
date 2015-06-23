@@ -25,3 +25,14 @@ indexes:
   - name: hm.normal
     direction: desc
   - name: name
+
+- kind: History
+  properties:
+  - name: date
+  - name: group
+
+- kind: History
+  properties:
+  - name: date
+  - name: tweeted
+  - name: group
