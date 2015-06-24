@@ -21,7 +21,7 @@ class Constants:
 
     hmbosses = ['Kargath Bladefist','The Butcher','Brackenspore','Tectus','Twin Ogron','Ko\'ragh','Imperator Mar\'gok']
     brfbosses = ['Oregorger','Gruul','The Blast Furnace','Hans\'gar and Franzok','Flamebender Ka\'graz','Kromog','Beastlord Darmac','Operator Thogar','The Iron Maidens','Blackhand']
-    hfcbosses = ['Hellfire Assault','The Iron Reaver','Hellfire High Council','Kormrok','Kilrogg Deadeye','The Monstrous Gorefiend','Shadow-Lord Iskar','Fel Lord Zakuun','Xhul\'horac','Socrethar the Eternal','Tyrant Velhari','Mannoroth','Archimonde']
+    hfcbosses = ['Hellfire Assault','Iron Reaver','Hellfire High Council','Kormrok','Kilrogg Deadeye','Gorefiend','Shadow-Lord Iskar','Fel Lord Zakuun','Xhul\'horac','Socrethar the Eternal','Tyrant Velhari','Mannoroth','Archimonde']
 
     num_hm_bosses = len(hmbosses)
     num_brf_bosses = len(brfbosses)
@@ -111,6 +111,12 @@ class Mergev1tov2(webapp2.RequestHandler):
                 for boss in Constants.hfcbosses:
                     newboss = Boss(name = boss)
                     group.hfc.bosses.append(newboss)
+            else:
+                for boss in group.hfc.bosses:
+                    if boss.name == 'The Iron Reaver':
+                        boss.name = 'Iron Reaver'
+                    elif boss.name == 'The Monstrous Gorefiend':
+                        boss.name = 'Gorefiend'
 
             if group.brf.bosses == None or len(group.brf.bosses) == 0:
                 self.response.write('%s: fixed BRF entry<br/>\n' % group.name)
