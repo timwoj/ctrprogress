@@ -210,7 +210,7 @@ class ProgressBuilder(webapp2.RequestHandler):
                 for t in timelist:
                     count = bossdata[boss][d]['times'].count(t)
                     logging.info('%s: time: %d   count: %s' % (boss, t, count))
-                    if count >= 5:
+                    if count >= 8:
                         logging.info('*** found valid kill for %s %s at %d' % (d, boss, t))
                         setattr(bossobj, d+'dead', datetime.date.today())
                         break
