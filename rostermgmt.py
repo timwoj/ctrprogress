@@ -194,7 +194,7 @@ class RosterBuilder(webapp2.RequestHandler):
         for entry in dashboard.entry:
             if entry.get_value('teamstatus') != 'Disbanded':
                 groupnames.append(entry.get_value('teamname'))
-                lastupdates.append(entry.get_value('lastrosterupdate'))
+                lastupdates.append(entry.get_value('lastupdate'))
 
         # sort the lists by the names in the group list.  This is a slick use
         # of zip.  it works by zipping the two lists into a single list of
