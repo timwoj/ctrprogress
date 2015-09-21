@@ -157,7 +157,7 @@ class DisplayHistory(webapp2.RequestHandler):
         # this is a time object at 2AM AZ time (or 9AM UTC)
         az2am = datetime.time(9)
 
-        for i in range(0,13):
+        for i in xrange(0,13):
             self.response.write('<tr><td colspan="2" class="history-date">'+str(curdate)+'</td></tr>\n')
 
             # Retrieve all of the entires for this date ordered by group name
