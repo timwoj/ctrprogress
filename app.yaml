@@ -48,6 +48,10 @@ handlers:
   script: main.app
   login: admin
 
+- url: /fixgroupnames
+  script: main.app
+  login: admin
+
 - url: /mergedb
   script: main.app
   login: admin

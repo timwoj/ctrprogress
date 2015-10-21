@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 #
-# Copyright 2007 Google Inc.
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -19,131 +17,23 @@ import json
 import logging
 import os
 import datetime
-
-# Need this stuff to do oauth with GAE
-import httplib2
-from oauth2client.client import SignedJwtAssertionCredentials
-from apiclient.discovery import build
-
-# need this stuff for the google data API
-import gdata.spreadsheets
-import gdata.spreadsheets.client
-import gdata.gauth
-import gdata.alt.appengine
+from pytz.gae import pytz
 
 from ctrpmodels import Constants
 from ctrpmodels import Group
 from ctrpmodels import Raid
 from ctrpmodels import Boss
 
+from google.appengine.ext import ndb
+from google.appengine.api import urlfetch
+from google.appengine.api import urlfetch_errors
+
 import time
-from concurrent import futures
-import gc
 
 # Force the deadline for urlfetch to be 10 seconds (Default is 5).  For some
 # reason, that first lookup for the spreadsheet takes a bit.
 from google.appengine.api import urlfetch
 urlfetch.set_default_fetch_deadline(20);
-
-# Grabs the ID for the worksheet from the roster spreadsheet with the
-# matching group name.
-def getsheetID(feed, name):
-    sheet = [x for x in feed.entry if x.title.text.lower() == name.lower()][0]
-    id_parts = sheet.id.text.split('/')
-    return id_parts[len(id_parts) - 1]
-
-def worker(g, feed, client, curr_key):
-    t4 = time.time()
-    logging.info('working on group %s' % g)
-    sheetID = getsheetID(feed, g)
-    sheet = client.GetListFeed(curr_key, sheetID)
-
-    # build up a list of toons for the group from the spreadsheet
-    toons = list()
-
-    # each tr is a row in the table.  we care about columns 4-6, which are
-    # the character name, the server, and the role.
-    for i,entry in enumerate(sheet.entry):
-
-        # get the text from the cells for this row that we care about,
-        # assuming none of them are empty
-        if entry.get_value('charactername') == None or entry.get_value('server') == None:
-            continue
-
-        toon = entry.get_value('charactername').encode('utf-8','ignore')
-        if len(toon) == 0:
-            continue
-
-        realm = entry.get_value('server').encode('utf-8','ignore')
-        if realm != 'Aerie Peak':
-            toon += '/%s' % realm
-        else:
-            toon += '/aerie-peak'
-
-        toons.append(toon)
-
-    toons = sorted(toons)
-
-    t5 = time.time()
-
-    # Check if this group already exists in the datastore.  We don't
-    # want to overwrite existing progress data for a group if we don't
-    # have to.
-    query = Group.query(Group.name == g)
-    results = query.fetch(1)
-
-    responsetext = ''
-    loggroup = ''
-    if (len(results) == 0):
-        # create a new group, but only if it has at least 5 toons in
-        # it.  that's the threshold for building progress data and
-        # there's no real reason to create groups with only that many
-        # toons.
-        if (len(toons) >= 5):
-            newgroup = Group(name=g)
-            newgroup.brf = Raid()
-            newgroup.brf.bosses = list()
-            for boss in Constants.brfbosses:
-                newboss = Boss(name = boss)
-                newgroup.brf.bosses.append(newboss)
-            
-            newgroup.hm = Raid()
-            newgroup.hm.bosses = list()
-            for boss in Constants.hmbosses:
-                newboss = Boss(name = boss)
-                newgroup.hm.bosses.append(newboss)
-            
-            newgroup.hfc = Raid()
-            newgroup.hfc.bosses = list()
-            for boss in Constants.hfcbosses:
-                newboss = Boss(name = boss)
-                newgroup.hfc.bosses.append(newboss)
-
-            newgroup.toons = toons
-            newgroup.rosterupdated = datetime.date.today()
-                        
-            newgroup.put()
-            responsetext = 'Added group %s with %d toons' % (g,len(toons))
-            loggroup = 'Added'
-        else:
-            responsetext = 'New group %s only has %d toons and was not included' % (g, len(toons))
-            loggroup = 'Skipped'
-    else:
-        # the group already exists and all we need to do is update the
-        # toon list.  all of the other data stays the same.
-        existing = results[0]
-        existing.toons = toons
-        existing.rosterupdated = datetime.date.today()
-        existing.put()
-        responsetext = 'Updated group %s with %d toons' % (g,len(toons))
-        loggroup = 'Updated'
-
-    t6 = time.time()
-
-    logging.info('time spent getting toons for %s: %s' % (g, (t5-t4)))
-    logging.info('time spent updating db for %s: %s' % (g, (t6-t5)))
-
-    return (loggroup, len(toons), responsetext)
 
 class RosterBuilder(webapp2.RequestHandler):
 
@@ -151,122 +41,91 @@ class RosterBuilder(webapp2.RequestHandler):
 
         self.response.write('<html><head><title>Roster Update</title></head><body>')
 
-        path = os.path.join(os.path.split(__file__)[0],'api-auth.json')
-        auth_data = json.load(open(path))
-
-        path = os.path.join(os.path.split(__file__)[0],'oauth_private_key.pem')
-        with open(path) as keyfile:
-          private_key = keyfile.read()
-        
-        credentials = SignedJwtAssertionCredentials(
-          auth_data['oauth_client_email'],
-          private_key,
-          scope=(
-            'https://www.googleapis.com/auth/drive',
-            'https://spreadsheets.google.com/feeds',
-            'https://docs.google.com/feeds',
-          ))
-        http_auth = credentials.authorize(httplib2.Http())
-        authclient = build('oauth2','v2',http=http_auth)
-
-        auth2token = gdata.gauth.OAuth2TokenFromCredentials(credentials)
-
-        gd_client = gdata.spreadsheets.client.SpreadsheetsClient()
-        gd_client = auth2token.authorize(gd_client)
-
-        logging.info('logged in, grabbing main sheet')
-
-        # Open the main roster feed
-        roster_sheet_key = '1tvpsPzZCFupJkTT1y7RmMkuh5VsjBiiA7FvYruJbTtw'
-        feed = gd_client.GetWorksheets(roster_sheet_key)
-        
         t1 = time.time()
-        logging.info('getting group names from dashboard')
-        
-        groupnames = list()
-        lastupdates = list()
-        
-        # Grab various columns from the DASHBOARD sheet on the spreadsheet, but
-        # ignore any groups that are marked as Disbanded.  This is better than
-        # looping back through the data again to remove them.
-        dashboard_id = getsheetID(feed, 'DASHBOARD')
-        dashboard = gd_client.GetListFeed(roster_sheet_key, dashboard_id)
-        for entry in dashboard.entry:
-            if entry.get_value('teamstatus') != 'Disbanded':
-                groupnames.append(entry.get_value('teamname'))
-                lastupdates.append(entry.get_value('lastupdate'))
-
-        # sort the lists by the names in the group list.  This is a slick use
-        # of zip.  it works by zipping the two lists into a single list of
-        # tuples containing the elements, sorting them, then unzipping them
-        # back into separate lists again.
-        groupnames, lastupdates = (list(t) for t in zip(*sorted(zip(groupnames,lastupdates))))
-
-        print('num groups on dashboard: %d' % len(groupnames))
-
-        t2 = time.time()
+        logging.info('retrieving roster data from Raid Builder')
+        url = 'http://guild.converttoraid.com/api/teams'
+        try:
+            response = urlfetch.fetch(url)
+        except urlfetch_errors.DeadlineExceededError:
+            logging.error('urlfetch threw DeadlineExceededError')
+        except urlfetch_errors.DownloadError:
+            logging.error('urlfetch threw DownloadError')
+        except:
+            logging.error('urlfetch threw unknown exception')
+    
+        jsondata = json.loads(response.content)
 
         groupcount = 0
         tooncount = 0
         responses = list()
 
+        t2 = time.time()
+        
         # Grab the list of groups already in the database.  Loop through and
         # delete any groups that don't exist in the list (it happens...) and
-        # any groups that are now marked disbanded.  Groups listed in the
-        # history will remain even if they disband.  While we're looping, also
+        # any groups that are now marked disbanded. Groups listed in the
+        # history will remain even if they disband. While we're looping, also
         # remove any groups from the list to be processed that haven't had
         # a roster update since the last time we did this.
         query = Group.query().order(Group.name)
         results = query.fetch()
         for res in results:
-            if res.name not in groupnames:
+
+            # Check for groups that don't exist in the jsondata anymore. These
+            # groups were removed for whatever reason and should be deleted
+            # from the database.
+            if res.name not in jsondata:
                 responses.append(('Removed', 'Removed disbanded or non-existent team from database: %s' % res.name))
                 res.key.delete()
-
-            # while we're looping through the groups, also remove any groups
-            # from the list to be processed that haven't had a roster update
-            # since the last time we parsed groups.
-            try:
-                index = groupnames.index(res.name)
-            except ValueError:
                 continue
 
-            lastupdate = datetime.datetime.strptime(lastupdates[index], '%m/%d/%Y').date()
-            if res.rosterupdated != None and res.rosterupdated > lastupdate:
-                responses.append(('DateUnchanged', '%s hasn\'t been updated since last load (load: %s, update: %s)' % (res.name, res.rosterupdated, lastupdate)))
-                groupcount += 1
-                tooncount += len(res.toons)
-                del groupnames[index]
-                del lastupdates[index]
+            # Check for groups that are in both the jsondata and database, but
+            # are marked as disbanded in the json data. These should be removed
+            # from the database and removed from the json data so they don't
+            # get processed later.
+            elif jsondata[res.name]['status'] == 'Disbanded':
+                responses.append(('Removed', 'Removed team marked disbanded from database: %s' % res.name))
+                res.key.delete()
 
-        logging.info('num groups to process: %d' % len(groupnames))
+            # if the last updated time exists in the roster data (maccus added
+            # it), while we're looping through the groups, also remove any
+            # groups from the list to be processed that haven't had a roster
+            # update since the last time we parsed groups.
+            elif 'updated_at' in jsondata[res.name]:
+                # date comes to us as date/time with a timezone. adjust the date time
+                # to add the timezone information, then pull just the date out of it
+                # in UTC time.
+                updated_at = jsondata[res.name]['updated_at']
+                updatetime = datetime.datetime.strptime(updated_at['date'], '%Y-%m-%d %H:%M:%S.%f')
+                tz = updated_at['timezone'].replace('\\','')
+                localtime = pytz.timezone(tz).localize(updatetime)
+                lastupdate = localtime.astimezone(pytz.timezone('UTC')).date()
+                
+                if res.rosterupdated != None and res.rosterupdated > lastupdate:
+                    responses.append(('DateUnchanged', '%s hasn\'t been updated since last load (load: %s, update: %s)' % (res.name, res.rosterupdated, lastupdate)))
+                    groupcount += 1
+                    tooncount += len(res.toons)
+                    del jsondata[res.name]
+
+        logging.info('num groups to process: %d' % len(jsondata))
 
         t3 = time.time()
 
         logging.info('time spent getting list of groups %s' % (t2-t1))
         logging.info('time spent cleaning groups %s' % (t3-t2))
 
-        # use a threadpoolexecutor from concurrent.futures to gather the group
-        # rosters in parallel.  due to the memory limits on GAE, we only allow
-        # 25 threads at a time.  this comes *really* close to hitting both the
-        # limit on page-load time and the limit on memory.
-        executor = futures.ThreadPoolExecutor(max_workers=15)
+        # loop through the remaining groups in the json data and process them
+        # in one pass.  we don't have to worry about hitting memory limits or
+        # anything anymore since we're not making calls into the spreadsheet.
+        for group in jsondata:
+            if jsondata[group]['status'] == 'Disbanded':
+                continue
 
-        fs = dict()
-        for g in groupnames:
-            fs[executor.submit(worker, g, feed, gd_client, roster_sheet_key)] = g
-
-        for future in futures.as_completed(fs):
-            g = fs[future]
-            if future.exception() is not None:
-                logging.info('%s generated an exception: %s' % (g, future.exception()))
-            else:
-                returnval = future.result()
-                responses.append((returnval[0], returnval[2]))
-                if returnval[0] == 'Added' or returnval[0] == 'Updated':
-                    groupcount += 1
-                    tooncount += returnval[1]
-        fs.clear()
+            returnval = self.worker(group, jsondata[group])
+            responses.append((returnval[0], returnval[2]))
+            if returnval[0] == 'Added' or returnval[0] == 'Updated':
+                groupcount += 1
+                tooncount += returnval[1]
 
         self.response.write('<h3>New Raid Groups</h3>')
         added = sorted([x for x in responses if x[0] == 'Added'], key=lambda tup: tup[1])
@@ -300,3 +159,115 @@ class RosterBuilder(webapp2.RequestHandler):
         self.response.write('Now managing %d groups with %d total toons<br/>' % (groupcount, tooncount))
 
         self.response.write('</body></html>')
+
+    def worker(self, name, group):
+        t4 = time.time()
+        logging.info('working on group %s' % name)
+        
+        # build up a list of toons for the group from the spreadsheet
+        toons = list()
+
+        for toon in group['toons']:
+
+            # skip any toons that aren't marked active, since those toons
+            # shouldn't be counted as part of the roster for ilvl
+            # TODO: revisit this
+            if toon['status'] != 'Active':
+                continue
+
+            toons.append('%s/%s' % (toon['toon_name'], toon['realm']))
+
+        toons = sorted(toons)
+
+        t5 = time.time()
+        
+        # Check if this group already exists in the datastore.  We don't
+        # want to overwrite existing progress data for a group if we don't
+        # have to.
+        query = Group.query(Group.name == name)
+        results = query.fetch(1)
+        
+        responsetext = ''
+        loggroup = ''
+        if (len(results) == 0):
+            # create a new group, but only if it has at least 5 toons in
+            # it.  that's the threshold for building progress data and
+            # there's no real reason to create groups with only that many
+            # toons.
+            if (len(toons) >= 5):
+                newgroup = Group(name=name)
+                newgroup.brf = Raid()
+                newgroup.brf.bosses = list()
+                for boss in Constants.brfbosses:
+                    newboss = Boss(name = boss)
+                    newgroup.brf.bosses.append(newboss)
+            
+                newgroup.hm = Raid()
+                newgroup.hm.bosses = list()
+                for boss in Constants.hmbosses:
+                    newboss = Boss(name = boss)
+                    newgroup.hm.bosses.append(newboss)
+                    
+                newgroup.hfc = Raid()
+                newgroup.hfc.bosses = list()
+                for boss in Constants.hfcbosses:
+                    newboss = Boss(name = boss)
+                    newgroup.hfc.bosses.append(newboss)
+
+                newgroup.toons = toons
+                newgroup.rosterupdated = datetime.date.today()
+                        
+                newgroup.put()
+                responsetext = 'Added group %s with %d toons' % (name,len(toons))
+                loggroup = 'Added'
+            else:
+                responsetext = 'New group %s only has %d toons and was not included' % (name, len(toons))
+                loggroup = 'Skipped'
+        else:
+            # the group already exists and all we need to do is update the
+            # toon list.  all of the other data stays the same.
+            existing = results[0]
+            existing.toons = toons
+            existing.rosterupdated = datetime.date.today()
+            existing.put()
+            responsetext = 'Updated group %s with %d toons' % (name,len(toons))
+            loggroup = 'Updated'
+            
+        t6 = time.time()
+        
+        logging.info('time spent getting toons for %s: %s' % (name, (t5-t4)))
+        logging.info('time spent updating db for %s: %s' % (name, (t6-t5)))
+        
+        return (loggroup, len(toons), responsetext)
+        
+    def fix_groupnames(self):
+    
+        logging.info('retrieving roster data from Raid Builder')
+        url = 'http://guild.converttoraid.com/api/teams'
+        try:
+            response = urlfetch.fetch(url)
+        except urlfetch_errors.DeadlineExceededError:
+            logging.error('urlfetch threw DeadlineExceededError')
+        except urlfetch_errors.DownloadError:
+            logging.error('urlfetch threw DownloadError')
+        except:
+            logging.error('urlfetch threw unknown exception')
+    
+        jsondata = json.loads(response.content)
+        
+#        query = Group.query(Group.name == "Blame The Hunter")
+#        results = query.fetch()
+#        results[0].name = "Blame the Hunter"
+#        results[0].put()
+#        return
+
+        query = Group.query().order(Group.name)
+        results = query.fetch()
+        for group in results:
+            cap_db_name = group.name.upper()
+            for jsonname in jsondata:
+                if (cap_db_name == jsonname.upper()) and (group.name != jsonname):
+                    self.response.write('Fixed group name "%s" -> "%s"\n' % (group.name, jsonname))
+                    group.name = jsonname
+                    group.put()
+                    break

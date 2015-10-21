@@ -28,6 +28,7 @@ app = webapp2.WSGIApplication([
     ('/rank', ranker.Ranker),
     ('/builder', ranker.ProgressBuilder),
     ('/mergedb', ctrpmodels.Mergev1tov2),
+	webapp2.Route('/fixgroupnames', rostermgmt.RosterBuilder, handler_method='fix_groupnames'),
     webapp2.Route('/tooltips.js', display.Display, handler_method='build_tooltips'),
     webapp2.Route('/loadone', ranker.ProgressBuilder, handler_method='loadone'),
     webapp2.Route('/startrank', ranker.Ranker, handler_method='post'),
