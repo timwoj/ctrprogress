@@ -5,7 +5,7 @@ import webapp2,jinja2,os,datetime
 import ctrpmodels
 
 def normalize(groupname):
-    return groupname.lower().replace('\'','').replace(' ','-')
+    return groupname.lower().replace('\'','').replace(' ','-').replace('"','')
 
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
