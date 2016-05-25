@@ -63,7 +63,7 @@ def handle_result(name, realm, apikey):
 
     # we get all of the data here, but we want to filter out just the raids
     # we care about so that it's not so much data returned from the importer
-    validraids = [ctrpmodels.Constants.hfcname]
+    validraids = [ctrpmodels.Constants.enname,ctrpmodels.Constants.nhname]
     if toondata['progression'] != None:
         toondata['progression']['raids'] = [r for r in toondata['progression']['raids'] if r['name'] in validraids]
 

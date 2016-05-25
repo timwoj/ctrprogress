@@ -63,7 +63,8 @@ class ProgressBuilder(webapp2.RequestHandler):
         importer.load(group.toons, data)
 
         progress = dict()
-        self.parse(Constants.hfcbosses, data, Constants.hfcname, progress, writeDB)
+        self.parse(Constants.enbosses, data, Constants.enname, progress, writeDB)
+        self.parse(Constants.nhbosses, data, Constants.nhname, progress, writeDB)
 
         # calculate the avg ilvl values from the toon data
         group.avgilvl = 0
@@ -90,7 +91,8 @@ class ProgressBuilder(webapp2.RequestHandler):
         # build all of the points of data that are needed.  First, update which
         # bosses have been killed for a group, then loop through the
         # difficulties and build the killed counts and the history.
-        for raid in [('hfc',Constants.hfcname,Constants.hfcbosses)]:
+        for raid in [('en',Constants.enname,Constants.enbosses),
+                     ('nh',Constants.nhname,Constants.nhbosses)]:
 
             group_raid = getattr(group, raid[0])
             data_raid = progress[raid[1]]
@@ -122,18 +124,14 @@ class ProgressBuilder(webapp2.RequestHandler):
                     if (new_hist == None):
                         new_hist = ctrpmodels.History(group=group.name)
                         new_hist.date = datetime.date.today()
-                        new_hist.hm = ctrpmodels.RaidHistory()
-                        new_hist.hm.mythic = list()
-                        new_hist.hm.heroic = list()
-                        new_hist.hm.normal = list()
-                        new_hist.brf = ctrpmodels.RaidHistory()
-                        new_hist.brf.mythic = list()
-                        new_hist.brf.heroic = list()
-                        new_hist.brf.normal = list()
-                        new_hist.hfc = ctrpmodels.RaidHistory()
-                        new_hist.hfc.mythic = list()
-                        new_hist.hfc.heroic = list()
-                        new_hist.hfc.normal = list()
+                        new_hist.en = ctrpmodels.RaidHistory()
+                        new_hist.en.mythic = list()
+                        new_hist.en.heroic = list()
+                        new_hist.en.normal = list()
+                        new_hist.nh = ctrpmodels.RaidHistory()
+                        new_hist.nh.mythic = list()
+                        new_hist.nh.heroic = list()
+                        new_hist.nh.normal = list()
                         
                     raidhist = getattr(new_hist, raid[0])
 
@@ -258,9 +256,8 @@ class ProgressBuilder(webapp2.RequestHandler):
                 # mark this update as tweeted to avoid reposts
                 u.tweeted = True
 
-                for raid in [('hfc',Constants.hfcname,Constants.hfcbosses),
-                             ('brf',Constants.brfname,Constants.brfbosses),
-                             ('hm',Constants.hmname,Constants.hmbosses)]:
+                for raid in [('en',Constants.enname,Constants.enbosses),
+                             ('nh',Constants.nhname,Constants.nhbosses)]:
 
                     raidhist=getattr(u, raid[0])
                     if raidhist != None:
@@ -332,7 +329,7 @@ class Test(webapp2.RequestHandler):
     def get(self):
         importer = wowapi.Importer()
 
-        q = Group.query(Group.name == 'Raided-X')
+        q = Group.query(Group.name == 'Threat Level Midnight')
         groups = q.fetch()
 
         if len(groups) != 0:
@@ -342,8 +339,10 @@ class Test(webapp2.RequestHandler):
 
             progress = dict()
             rank = ProgressBuilder()
-            rank.parse(Constants.difficulties, Constants.hfcbosses,
-                       data, Constants.hfcname, progress)
+            rank.parse(Constants.difficulties, Constants.enbosses,
+                       data, Constants.enname, progress)
+            rank.parse(Constants.difficulties, Constants.nhbosses,
+                       data, Constants.nhname, progress)
             logging.info("Finished parsing data")
 
             logging.info(progress)

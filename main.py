@@ -22,12 +22,11 @@ import rostermgmt
 
 app = webapp2.WSGIApplication([
     ('/', display.Display),
-    ('/text', display.DisplayText),
     ('/history', display.DisplayHistory),
     ('/loadgroups', rostermgmt.RosterBuilder),
     ('/rank', ranker.Ranker),
     ('/builder', ranker.ProgressBuilder),
-    ('/mergedb', ctrpmodels.Mergev1tov2),
+    ('/migrate', ctrpmodels.MigrateT18toT19),
 	webapp2.Route('/fixgroupnames', rostermgmt.RosterBuilder, handler_method='fix_groupnames'),
     webapp2.Route('/tooltips.js', display.Display, handler_method='build_tooltips'),
     webapp2.Route('/loadone', ranker.ProgressBuilder, handler_method='loadone'),
