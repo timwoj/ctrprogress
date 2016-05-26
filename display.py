@@ -26,10 +26,10 @@ class Display(webapp2.RequestHandler):
 
         self.response.write('<table>\n')
 
-        groups = ctrpmodels.Group.query_for_t18_display()
+        groups = ctrpmodels.Group.query_for_t19_display()
         for group in groups:
             template_values = {'group' : group}
-            template = JINJA_ENVIRONMENT.get_template('templates/group-t18.html')
+            template = JINJA_ENVIRONMENT.get_template('templates/group-t19.html')
             self.response.write(template.render(template_values))
 
         self.response.write('</table>\n')
@@ -47,8 +47,8 @@ class Display(webapp2.RequestHandler):
         self.response.write('content: function() {\n')
         self.response.write('var tooltips = {};\n')
         
-        groups = ctrpmodels.Group.query_for_t18_display()
-        for raid in ['hfc']:
+        groups = ctrpmodels.Group.query_for_t19_display()
+        for raid in ['en','nh']:
             for group in groups:
                 normaltext = ""
                 heroictext = ""
@@ -92,38 +92,6 @@ class Display(webapp2.RequestHandler):
         self.response.write('return tooltips[ttid];\n')
         self.response.write('}});\n')
         self.response.write('});\n')
-            
-class DisplayText(webapp2.RequestHandler):
-    def get(self):
-
-        q = ctrpmodels.Global.query()
-        r = q.fetch()
-
-        template_values = {
-            'last_updated': datetime.datetime.now(),
-            'title' : 'Text Display'
-        }
-        template = JINJA_ENVIRONMENT.get_template('templates/header.html')
-        self.response.write(template.render(template_values))
-
-        # get the group data from the datastore, and order it in decreasing order
-        # so that further progressed teams show up first.  break ties by
-        # alphabetical order of group names
-        groups = ctrpmodels.Group.query_for_t18_display()
-
-        for group in groups:
-            self.response.write('%s (Avg ilvl: %d)<br/>' % (group.name,group.avgilvl))
-            self.writeProgress(group.hfc)
-            self.response.write('<br/>')
-        template_values = {}
-        template = JINJA_ENVIRONMENT.get_template('templates/footer.html')
-        self.response.write(template.render(template_values))
-
-    def writeProgress(self, raid):
-        self.response.write("%s: %d/%dN %d/%dH %d/%dM<br/>" %
-                        (raid.raidname, raid.normal, raid.numbosses,
-                         raid.heroic, raid.numbosses, raid.mythic,
-                         raid.numbosses))
 
 class DisplayHistory(webapp2.RequestHandler):
     def get(self):
@@ -188,9 +156,8 @@ class DisplayHistory(webapp2.RequestHandler):
 
                     template_values = {
                         'history': u,
-                        'num_brf_bosses': ctrpmodels.Constants.num_brf_bosses,
-                        'num_hm_bosses': ctrpmodels.Constants.num_hm_bosses,
-                        'num_hfc_bosses': ctrpmodels.Constants.num_hfc_bosses,
+                        'num_en_bosses': ctrpmodels.Constants.num_nh_bosses,
+                        'num_nh_bosses': ctrpmodels.Constants.num_en_bosses,
                     }
                     template = JINJA_ENVIRONMENT.get_template(
                         'templates/history.html')
@@ -232,9 +199,8 @@ class DisplayHistory(webapp2.RequestHandler):
             for u in entries:
                 template_values = {
                     'history': u,
-                    'num_brf_bosses': ctrpmodels.Constants.num_brf_bosses,
-                    'num_hm_bosses': ctrpmodels.Constants.num_hm_bosses,
-                    'num_hfc_bosses': ctrpmodels.Constants.num_hfc_bosses,
+                    'num_en_bosses': ctrpmodels.Constants.num_en_bosses,
+                    'num_nh_bosses': ctrpmodels.Constants.num_nh_bosses,
                 }
                 template = JINJA_ENVIRONMENT.get_template(
                     'templates/group-history.html')

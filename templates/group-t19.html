@@ -1,0 +1,12 @@
+  <tr>
+    <th class="group-header-name">{{ group.name }}</th>
+    <th class="group-header-ilvl">Average ilvl: {{ group.avgilvl }}</th>
+  </tr>
+  <tr>
+    <td>
+      {% include '/templates/emeraldnightmare-table.html' %}
+    </td>
+    <td>
+      {% include '/templates/nighthold-table.html' %}
+    </td>
+  </tr>

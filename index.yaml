@@ -12,27 +12,17 @@ indexes:
 
 - kind: Group
   properties:
-  - name: brf.mythic
+  - name: nh.mythic
     direction: desc
-  - name: brf.heroic
+  - name: nh.heroic
     direction: desc
-  - name: hm.mythic
+  - name: en.mythic
     direction: desc
-  - name: brf.normal
+  - name: nh.normal
     direction: desc
-  - name: hm.heroic
+  - name: en.heroic
     direction: desc
-  - name: hm.normal
-    direction: desc
-  - name: name
-
-- kind: Group
-  properties:
-  - name: hfc.mythic
-    direction: desc
-  - name: hfc.heroic
-    direction: desc
-  - name: hfc.normal
+  - name: en.normal
     direction: desc
   - name: name
 

@@ -42,7 +42,7 @@
     color:white;
 }
 
-.brfheaderchiclet {
+.nhheaderchiclet {
     text-align:center;
     width:110px;
     height:33px;
@@ -53,20 +53,20 @@
     font-size:14px;
 }
 
-.brfnormalheader {
-    background-image:url('../resources/blackrock-header-normal.png');
+.nhnormalheader {
+    background-image:url('../resources/nighthold-header-normal.png');
 }
 
-.brfheroicheader {
-    background-image:url('../resources/blackrock-header-heroic.png');
+.nhheroicheader {
+    background-image:url('../resources/nighthold-header-heroic.png');
     color:white;
 }
 
-.brfmythicheader {
-    background-image:url('../resources/blackrock-header-mythic.png');
+.nhmythicheader {
+    background-image:url('../resources/nighthold-header-mythic.png');
 }
 
-.hmheaderchiclet {
+.enheaderchiclet {
     text-align:center;
     width:90px;
     height:33px;
@@ -77,16 +77,16 @@
     font-size:14px;
 }
 
-.hmnormalheader {
-    background-image:url('../resources/highmaul-header-normal.png');
+.ennormalheader {
+    background-image:url('../resources/emerald-header-normal.png');
 }
 
-.hmheroicheader {
-    background-image:url('../resources/highmaul-header-heroic.png');
+.enheroicheader {
+    background-image:url('../resources/emerald-header-heroic.png');
 }
 
-.hmmythicheader {
-    background-image:url('../resources/highmaul-header-mythic.png');
+.enmythicheader {
+    background-image:url('../resources/emerald-header-mythic.png');
     color:white;
 }
 
@@ -102,14 +102,14 @@
     background-image:url(../resources/hfc-background.png);
 }
 
-.brf-background {
+.nh-background {
     background-size:530px 180px;
-    background-image:url(../resources/blackrock-background.png);
+    background-image:url(../resources/nighthold-background.png);
 }
 
-.hm-background {
+.en-background {
     background-size:500px 180px;
-    background-image:url(../resources/highmaul-background.png);
+    background-image:url(../resources/emerald-background.png);
     background-color:rgba(0, 0, 0, 0.1);
 }
 

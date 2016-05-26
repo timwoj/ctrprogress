@@ -1,0 +1,27 @@
+<table class="table-background nh-background">
+  <thead>
+    <tr>
+      <th colspan="11" class="table-header">The Nighthold</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="nhheaderchiclet nhmythicheader" ttid="{{ group.name | normalize }}-nh-mythic-header">Mythic {{ group.nh.mythic }}/10</td>
+      {% for n in range(10) -%}
+      <td><img src="../resources/nighthold-chiclet-mythic.png" height="32" width="33"{% if group.nh.mythic < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
+    </tr>
+    <tr>
+      <td class="nhheaderchiclet nhheroicheader" ttid="{{ group.name | normalize }}-nh-heroic-header">Heroic {{ group.nh.heroic }}/10</td>
+      {% for n in range(10) -%}
+      <td><img src="../resources/nighthold-chiclet-heroic.png" height="32" width="33"{% if group.nh.heroic < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
+    </tr>
+    <tr>
+      <td class="nhheaderchiclet nhnormalheader" ttid="{{ group.name | normalize }}-nh-normal-header">Normal {{ group.nh.normal }}/10</td>
+      {% for n in range(10) -%}
+      <td><img src="../resources/nighthold-chiclet-normal.png" height="32" width="33"{% if group.nh.normal < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
+    </tr>
+  </tbody>
+</table>

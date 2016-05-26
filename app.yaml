@@ -1,8 +1,11 @@
-application: ctraidprogress
+application: ctrptest
 version: 1
 runtime: python27
 api_version: 1
 threadsafe: yes
+
+builtins:
+- remote_api: on
 
 default_expiration: "2d"
 
