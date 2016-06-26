@@ -29,16 +29,16 @@
 }
 
 .hfcnormalheader {
-    background-image:url('../resources/hfc-header-normal.png');
+    background-image:url('../resources/hfc/header-normal.png');
 }
 
 .hfcheroicheader {
-    background-image:url('../resources/hfc-header-heroic.png');
+    background-image:url('../resources/hfc/header-heroic.png');
     color:white;
 }
 
 .hfcmythicheader {
-    background-image:url('../resources/hfc-header-mythic.png');
+    background-image:url('../resources/hfc/header-mythic.png');
     color:white;
 }
 
@@ -54,16 +54,16 @@
 }
 
 .nhnormalheader {
-    background-image:url('../resources/nighthold-header-normal.png');
+    background-image:url('../resources/nighthold/header-normal.png');
 }
 
 .nhheroicheader {
-    background-image:url('../resources/nighthold-header-heroic.png');
+    background-image:url('../resources/nighthold/header-heroic.png');
     color:white;
 }
 
 .nhmythicheader {
-    background-image:url('../resources/nighthold-header-mythic.png');
+    background-image:url('../resources/nighthold/header-mythic.png');
 }
 
 .enheaderchiclet {
@@ -78,15 +78,15 @@
 }
 
 .ennormalheader {
-    background-image:url('../resources/emerald-header-normal.png');
+    background-image:url('../resources/emerald/header-normal.png');
 }
 
 .enheroicheader {
-    background-image:url('../resources/emerald-header-heroic.png');
+    background-image:url('../resources/emerald/header-heroic.png');
 }
 
 .enmythicheader {
-    background-image:url('../resources/emerald-header-mythic.png');
+    background-image:url('../resources/emerald/header-mythic.png');
     color:white;
 }
 
@@ -97,19 +97,19 @@
     display:inline-block;
 }
 
-.hfc-background {
+.hfc/background {
     background-size:650px 180px;
-    background-image:url(../resources/hfc-background.png);
+    background-image:url(../resources/hfc/background.png);
 }
 
 .nh-background {
     background-size:530px 180px;
-    background-image:url(../resources/nighthold-background.png);
+    background-image:url(../resources/nighthold/background.png);
 }
 
 .en-background {
     background-size:500px 180px;
-    background-image:url(../resources/emerald-background.png);
+    background-image:url(../resources/emerald/background.png);
     background-color:rgba(0, 0, 0, 0.1);
 }
 
