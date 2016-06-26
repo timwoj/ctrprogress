@@ -1,0 +1,58 @@
+.brfheaderchiclet {
+    text-align:center;
+    width:110px;
+    height:33px;
+    background-size:110px 33px;
+    background-repeat:no-repeat;
+    background-position:0px 1px;
+    font-family:quadrata;
+    font-size:14px;
+}
+
+.brfnormalheader {
+    background-image:url('../resources/blackrock/header-normal.png');
+}
+
+.brfheroicheader {
+    background-image:url('../resources/blackrock/header-heroic.png');
+    color:white;
+}
+
+.brfmythicheader {
+    background-image:url('../resources/blackrock/header-mythic.png');
+}
+
+.hmheaderchiclet {
+    text-align:center;
+    width:90px;
+    height:33px;
+    background-size:90px 33px;
+    background-repeat:no-repeat;
+    background-position:0px 1px;
+    font-family:quadrata;
+    font-size:14px;
+}
+
+.hmnormalheader {
+    background-image:url('../resources/highmaul/header-normal.png');
+}
+
+.hmheroicheader {
+    background-image:url('../resources/highmaul/header-heroic.png');
+}
+
+.hmmythicheader {
+    background-image:url('../resources/highmaul/header-mythic.png');
+    color:white;
+}
+
+.brf-background {
+    background-size:530px 180px;
+    background-image:url(../resources/blackrock/background.png);
+}
+
+.hm-background {
+    background-size:500px 180px;
+    background-image:url(../resources/highmaul/background.png);
+    background-color:rgba(0, 0, 0, 0.1);
+}
