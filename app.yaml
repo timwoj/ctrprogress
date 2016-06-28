@@ -34,7 +34,7 @@ handlers:
 - url: /tier17\.html
   static_files: templates/tier17.html
   upload: templates/tier17\.html
-  
+
 - url: /startrank
   script: main.app
   login: admin
@@ -73,3 +73,6 @@ libraries:
   version: latest
 - name: ssl
   version: latest
+
+skip_files:
+- ^image_templates
