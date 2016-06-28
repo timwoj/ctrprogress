@@ -1,0 +1,59 @@
+.nhheaderchiclet {
+    text-align:center;
+    width:110px;
+    height:33px;
+    background-size:110px 33px;
+    background-repeat:no-repeat;
+    background-position:0px 1px;
+    font-family:quadrata;
+    font-size:14px;
+}
+
+.nhnormalheader {
+    background-image:url('../resources/nighthold/header-normal.png');
+    color:white;
+}
+
+.nhheroicheader {
+    background-image:url('../resources/nighthold/header-heroic.png');
+    color:white;
+}
+
+.nhmythicheader {
+    background-image:url('../resources/nighthold/header-mythic.png');
+}
+
+.enheaderchiclet {
+    text-align:center;
+    width:90px;
+    height:33px;
+    background-size:90px 33px;
+    background-repeat:no-repeat;
+    background-position:0px 1px;
+    font-family:quadrata;
+    font-size:14px;
+}
+
+.ennormalheader {
+    background-image:url('../resources/emerald/header-normal.png');
+}
+
+.enheroicheader {
+    background-image:url('../resources/emerald/header-heroic.png');
+}
+
+.enmythicheader {
+    background-image:url('../resources/emerald/header-mythic.png');
+    color:white;
+}
+
+.nh-background {
+    background-size:530px 180px;
+    background-image:url(../resources/nighthold/background.png);
+}
+
+.en-background {
+    background-size:500px 180px;
+    background-image:url(../resources/emerald/background.png);
+    background-color:rgba(0, 0, 0, 0.1);
+}
