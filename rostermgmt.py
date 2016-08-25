@@ -167,15 +167,16 @@ class RosterBuilder(webapp2.RequestHandler):
         # build up a list of toons for the group from the spreadsheet
         toons = list()
 
-        for toon in group['toons']:
+        if 'toons' in group:
+            for toon in group['toons']:
 
-            # skip any toons that aren't marked active, since those toons
-            # shouldn't be counted as part of the roster for ilvl
-            # TODO: revisit this
-            if toon['status'] != 'Active':
-                continue
+                # skip any toons that aren't marked active, since those toons
+                # shouldn't be counted as part of the roster for ilvl
+                # TODO: revisit this
+                if toon['status'] != 'Active':
+                    continue
 
-            toons.append('%s/%s' % (toon['toon_name'], toon['realm']))
+                toons.append('%s/%s' % (toon['toon_name'], toon['realm']))
 
         toons = sorted(toons)
 
