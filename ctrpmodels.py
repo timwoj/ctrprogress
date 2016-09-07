@@ -18,7 +18,7 @@ class Constants:
     raids = [enname, nhname]
 
     enbosses = ['Nythendra','Il\'gynoth, Heart of Corruption','Elerethe Renferal','Usroc','Dragons of Nightmare','Cenarius','Xavius']
-    nhbosses = ['Skorpyron','Chronomatic Anomaly','Trilliax','Spellblade Aluriel','High Botanist Tel\'ram','Star Augur Etraeus','Tichondrius','Krosus','Grand Magistrix Elisande','Gul\'dan']
+    nhbosses = ['Skorpyron','Chronomatic Anomaly','Trilliax','Spellblade Aluriel','High Botanist Tel\'arn','Star Augur Etraeus','Tichondrius','Krosus','Grand Magistrix Elisande','Gul\'dan']
 
     num_en_bosses = len(enbosses)
     num_nh_bosses = len(nhbosses)
