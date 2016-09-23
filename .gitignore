@@ -56,3 +56,4 @@ target/
 .DS_Store
 *~
 oauth_private_key.pem
+api_auth.json

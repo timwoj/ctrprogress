@@ -12,12 +12,12 @@ from google.appengine.ext import ndb
 
 class Constants:
 
-    enname = "Emerald Nightmare"
-    nhname = "Nighthold"
+    enname = "The Emerald Nightmare"
+    nhname = "The Nighthold"
 
     raids = [enname, nhname]
 
-    enbosses = ['Nythendra','Il\'gynoth, Heart of Corruption','Elerethe Renferal','Usroc','Dragons of Nightmare','Cenarius','Xavius']
+    enbosses = ['Nythendra','Il\'gynoth, Heart of Corruption','Elerethe Renferal','Ursoc','Dragons of Nightmare','Cenarius','Xavius']
     nhbosses = ['Skorpyron','Chronomatic Anomaly','Trilliax','Spellblade Aluriel','High Botanist Tel\'arn','Star Augur Etraeus','Tichondrius','Krosus','Grand Magistrix Elisande','Gul\'dan']
 
     num_en_bosses = len(enbosses)

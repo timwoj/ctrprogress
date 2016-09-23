@@ -71,8 +71,8 @@ class ProgressBuilder(webapp2.RequestHandler):
         numtoons = 0
         for toon in data:
             # ignore toons that we didn't get data back for or for toons less than
-            # level 100
-            if 'items' in toon and toon['level'] == 100:
+            # level 110
+            if 'items' in toon and toon['level'] == 110:
                 numtoons += 1
                 group.avgilvl += toon['items']['averageItemLevel']
 
