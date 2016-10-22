@@ -48,7 +48,7 @@ class Display(webapp2.RequestHandler):
         self.response.write('var tooltips = {};\n')
         
         groups = ctrpmodels.Group.query_for_t19_display()
-        for raid in ['en','nh']:
+        for raid in ['en','nh','tov']:
             for group in groups:
                 normaltext = ""
                 heroictext = ""
@@ -156,8 +156,9 @@ class DisplayHistory(webapp2.RequestHandler):
 
                     template_values = {
                         'history': u,
-                        'num_en_bosses': ctrpmodels.Constants.num_nh_bosses,
-                        'num_nh_bosses': ctrpmodels.Constants.num_en_bosses,
+                        'num_en_bosses': ctrpmodels.Constants.num_en_bosses,
+                        'num_nh_bosses': ctrpmodels.Constants.num_nh_bosses,
+                        'num_tov_bosses': ctrpmodels.Constants.num_tov_bosses,
                     }
                     template = JINJA_ENVIRONMENT.get_template(
                         'templates/history.html')
@@ -201,6 +202,7 @@ class DisplayHistory(webapp2.RequestHandler):
                     'history': u,
                     'num_en_bosses': ctrpmodels.Constants.num_en_bosses,
                     'num_nh_bosses': ctrpmodels.Constants.num_nh_bosses,
+                    'num_tov_bosses': ctrpmodels.Constants.num_tov_bosses,
                 }
                 template = JINJA_ENVIRONMENT.get_template(
                     'templates/group-history.html')

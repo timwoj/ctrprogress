@@ -65,6 +65,7 @@ class ProgressBuilder(webapp2.RequestHandler):
         progress = dict()
         self.parse(Constants.enbosses, data, Constants.enname, progress, writeDB)
         self.parse(Constants.nhbosses, data, Constants.nhname, progress, writeDB)
+        self.parse(Constants.tovbosses, data, Constants.tovname, progress, writeDB)
 
         # calculate the avg ilvl values from the toon data
         group.avgilvl = 0
@@ -92,7 +93,8 @@ class ProgressBuilder(webapp2.RequestHandler):
         # bosses have been killed for a group, then loop through the
         # difficulties and build the killed counts and the history.
         for raid in [('en',Constants.enname,Constants.enbosses),
-                     ('nh',Constants.nhname,Constants.nhbosses)]:
+                     ('nh',Constants.nhname,Constants.nhbosses),
+                     ('tov',Constants.tovname,Constants.tovbosses)]:
 
             group_raid = getattr(group, raid[0])
             data_raid = progress[raid[1]]
@@ -132,6 +134,10 @@ class ProgressBuilder(webapp2.RequestHandler):
                         new_hist.nh.mythic = list()
                         new_hist.nh.heroic = list()
                         new_hist.nh.normal = list()
+                        new_hist.tov = ctrpmodels.RaidHistory()
+                        new_hist.tov.mythic = list()
+                        new_hist.tov.heroic = list()
+                        new_hist.tov.normal = list()
                         
                     raidhist = getattr(new_hist, raid[0])
 
@@ -257,7 +263,8 @@ class ProgressBuilder(webapp2.RequestHandler):
                 u.tweeted = True
 
                 for raid in [('en',Constants.enname,Constants.enbosses),
-                             ('nh',Constants.nhname,Constants.nhbosses)]:
+                             ('nh',Constants.nhname,Constants.nhbosses),
+                             ('tov',Constants.tovname,Constants.tovbosses)]:
 
                     raidhist=getattr(u, raid[0])
                     if raidhist != None:
@@ -343,6 +350,8 @@ class Test(webapp2.RequestHandler):
                        data, Constants.enname, progress)
             rank.parse(Constants.difficulties, Constants.nhbosses,
                        data, Constants.nhname, progress)
+            rank.parse(Constants.difficulties, Constants.tovbosses,
+                       data, Constants.tovname, progress)
             logging.info("Finished parsing data")
 
             logging.info(progress)

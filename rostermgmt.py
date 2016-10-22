@@ -52,7 +52,7 @@ class RosterBuilder(webapp2.RequestHandler):
             logging.error('urlfetch threw DownloadError')
         except:
             logging.error('urlfetch threw unknown exception')
-    
+
         jsondata = json.loads(response.content)
 
         groupcount = 0
@@ -60,7 +60,7 @@ class RosterBuilder(webapp2.RequestHandler):
         responses = list()
 
         t2 = time.time()
-        
+
         # Grab the list of groups already in the database.  Loop through and
         # delete any groups that don't exist in the list (it happens...) and
         # any groups that are now marked disbanded. Groups listed in the
@@ -100,7 +100,7 @@ class RosterBuilder(webapp2.RequestHandler):
                 tz = updated_at['timezone'].replace('\\','')
                 localtime = pytz.timezone(tz).localize(updatetime)
                 lastupdate = localtime.astimezone(pytz.timezone('UTC')).date()
-                
+
                 if res.rosterupdated != None and res.rosterupdated > lastupdate:
                     responses.append(('DateUnchanged', '%s hasn\'t been updated since last load (load: %s, update: %s)' % (res.name, res.rosterupdated, lastupdate)))
                     groupcount += 1
@@ -163,7 +163,7 @@ class RosterBuilder(webapp2.RequestHandler):
     def worker(self, name, group):
         t4 = time.time()
         logging.info('working on group %s' % name)
-        
+
         # build up a list of toons for the group from the spreadsheet
         toons = list()
 
@@ -181,13 +181,13 @@ class RosterBuilder(webapp2.RequestHandler):
         toons = sorted(toons)
 
         t5 = time.time()
-        
+
         # Check if this group already exists in the datastore.  We don't
         # want to overwrite existing progress data for a group if we don't
         # have to.
         query = Group.query(Group.name == name)
         results = query.fetch(1)
-        
+
         responsetext = ''
         loggroup = ''
         if (len(results) == 0):
@@ -202,16 +202,22 @@ class RosterBuilder(webapp2.RequestHandler):
                 for boss in Constants.enbosses:
                     newboss = Boss(name = boss)
                     newgroup.en.bosses.append(newboss)
-            
+
                 newgroup.nh = Raid()
                 newgroup.nh.bosses = list()
                 for boss in Constants.nhbosses:
                     newboss = Boss(name = boss)
                     newgroup.nh.bosses.append(newboss)
-                    
+
+                newgroup.tov = Raid()
+                newgroup.tov.bosses = list()
+                for boss in Constants.tovbosses:
+                    newboss = Boss(name = boss)
+                    newgroup.tov.bosses.append(newboss)
+
                 newgroup.toons = toons
                 newgroup.rosterupdated = datetime.date.today()
-                        
+
                 newgroup.put()
                 responsetext = 'Added group %s with %d toons' % (name,len(toons))
                 loggroup = 'Added'
@@ -227,16 +233,16 @@ class RosterBuilder(webapp2.RequestHandler):
             existing.put()
             responsetext = 'Updated group %s with %d toons' % (name,len(toons))
             loggroup = 'Updated'
-            
+
         t6 = time.time()
-        
+
         logging.info('time spent getting toons for %s: %s' % (name, (t5-t4)))
         logging.info('time spent updating db for %s: %s' % (name, (t6-t5)))
-        
+
         return (loggroup, len(toons), responsetext)
-        
+
     def fix_groupnames(self):
-    
+
         logging.info('retrieving roster data from Raid Builder')
         url = 'http://guild.converttoraid.com/api/teams'
         try:
@@ -247,9 +253,9 @@ class RosterBuilder(webapp2.RequestHandler):
             logging.error('urlfetch threw DownloadError')
         except:
             logging.error('urlfetch threw unknown exception')
-    
+
         jsondata = json.loads(response.content)
-        
+
 #        query = Group.query(Group.name == "Blame The Hunter")
 #        results = query.fetch()
 #        results[0].name = "Blame the Hunter"

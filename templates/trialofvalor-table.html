@@ -1,0 +1,27 @@
+<table class="table-background tov-background">
+  <thead>
+    <tr>
+      <th colspan="8" class="table-header">Trial of Valor</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="tovheaderchiclet tovmythicheader" ttid="{{ group.name | normalize }}-tov-mythic-header">Mythic {{ group.tov.mythic }}/3</td>
+      {% for n in range(3) -%}
+      <td><img src="../resources/trial/chiclet-mythic.png" height="32" width="33"{% if group.tov.mythic < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
+    </tr>
+    <tr>
+      <td class="tovheaderchiclet tovheroicheader" ttid="{{ group.name | normalize }}-tov-heroic-header">Heroic {{ group.tov.heroic }}/3</td>
+      {% for n in range(3) -%}
+      <td><img src="../resources/trial/chiclet-heroic.png" height="32" width="33"{% if group.tov.heroic < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
+    </tr>
+    <tr>
+      <td class="tovheaderchiclet tovnormalheader" ttid="{{ group.name | normalize }}-tov-normal-header">Normal {{ group.tov.normal }}/3</td>
+      {% for n in range(3) -%}
+      <td><img src="../resources/trial/chiclet-normal.png" height="32" width="33"{% if group.tov.normal < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
+    </tr>
+  </tbody>
+</table>

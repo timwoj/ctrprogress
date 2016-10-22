@@ -26,6 +26,28 @@ indexes:
     direction: desc
   - name: name
 
+- kind: Group
+  properties:
+  - name: nh.mythic
+    direction: desc
+  - name: nh.heroic
+    direction: desc
+  - name: tov.mythic
+    direction: desc
+  - name: en.mythic
+    direction: desc
+  - name: nh.normal
+    direction: desc
+  - name: tov.heroic
+    direction: desc
+  - name: en.heroic
+    direction: desc
+  - name: tov.normal
+    direction: desc
+  - name: en.normal
+    direction: desc
+  - name: name
+
 - kind: History
   properties:
   - name: date

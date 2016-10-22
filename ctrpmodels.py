@@ -14,14 +14,17 @@ class Constants:
 
     enname = "The Emerald Nightmare"
     nhname = "The Nighthold"
+    tovname = "Trial of Valor"
 
-    raids = [enname, nhname]
+    raids = [enname, nhname, tovname]
 
     enbosses = ['Nythendra','Il\'gynoth, Heart of Corruption','Elerethe Renferal','Ursoc','Dragons of Nightmare','Cenarius','Xavius']
     nhbosses = ['Skorpyron','Chronomatic Anomaly','Trilliax','Spellblade Aluriel','High Botanist Tel\'arn','Star Augur Etraeus','Tichondrius','Krosus','Grand Magistrix Elisande','Gul\'dan']
+    tovbosses = ['Odyn','Guarm','Helya']
 
     num_en_bosses = len(enbosses)
     num_nh_bosses = len(nhbosses)
+    num_tov_bosses = len(tovbosses)
 
     difficulties = ['normal','heroic','mythic']
 
@@ -55,6 +58,7 @@ class Group(ndb.Model):
     # more opaque
     en = ndb.StructuredProperty(Raid, required = True)
     nh = ndb.StructuredProperty(Raid, required = True)
+    tov = ndb.StructuredProperty(Raid, required = True)
     lastupdated = ndb.DateTimeProperty()
     rosterupdated = ndb.DateProperty()
     avgilvl = ndb.IntegerProperty(default = 0)
@@ -64,7 +68,7 @@ class Group(ndb.Model):
     # split tier.
     @classmethod
     def query_for_t19_display(self):
-        q = self.query().order(-Group.nh.mythic, -Group.nh.heroic, -Group.en.mythic, -Group.nh.normal, -Group.en.heroic, -Group.en.normal).order(Group.name)
+        q = self.query().order(-Group.nh.mythic, -Group.nh.heroic, -Group.tov.mythic, -Group.en.mythic, -Group.nh.normal, -Group.tov.heroic, -Group.en.heroic, -Group.tov.normal, -Group.en.normal).order(Group.name)
         results = q.fetch()
         return results
 
@@ -93,6 +97,7 @@ class History(ndb.Model):
     date = ndb.DateProperty(required = True)
     en = ndb.StructuredProperty(RaidHistory, required = True)
     nh = ndb.StructuredProperty(RaidHistory, required = True)
+    tov = ndb.StructuredProperty(RaidHistory, required = True)
     tweeted = ndb.BooleanProperty(default = False, required = True)
 
 class MigrateT18toT19(webapp2.RequestHandler):
@@ -125,3 +130,30 @@ class MigrateT18toT19(webapp2.RequestHandler):
             logging.info(group)
 
             group.put()
+
+class MigrateAddToV(webapp2.RequestHandler):
+    def get(self):
+        q = Group.query()
+        groups = q.fetch()
+
+        for group in groups:
+            group.tov = Raid()
+            group.tov.raidname = Constants.tovname
+            group.tov.bosses = list()
+            for boss in Constants.tovbosses:
+                logging.info(boss)
+                newboss = Boss(name = boss)
+                group.tov.bosses.append(newboss)
+
+            logging.info(group)
+
+            group.put()
+
+        q = History.query()
+        histories = q.fetch()
+        for hist in histories:
+            hist.tov = ctrpmodels.RaidHistory()
+            hist.tov.mythic = list()
+            hist.tov.heroic = list()
+            hist.tov.normal = list()
+            hist.put()

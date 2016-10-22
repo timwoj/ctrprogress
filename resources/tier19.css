@@ -23,6 +23,31 @@
     background-image:url('../resources/nighthold/header-mythic.png');
 }
 
+.tovheaderchiclet {
+    text-align:center;
+    width:90px;
+    height:33px;
+    background-size:90px 33px;
+    background-repeat:no-repeat;
+    background-position:0px 1px;
+    font-family:quadrata;
+    font-size:14px;
+}
+
+.tovnormalheader {
+    background-image:url('../resources/trial/header-normal.png');
+    color:white;
+}
+
+.tovheroicheader {
+    background-image:url('../resources/trial/header-heroic.png');
+    color:white;
+}
+
+.tovmythicheader {
+    background-image:url('../resources/trial/header-mythic.png');
+}
+
 .enheaderchiclet {
     text-align:center;
     width:90px;
@@ -50,6 +75,11 @@
 .nh-background {
     background-size:530px 180px;
     background-image:url(../resources/nighthold/background.png);
+}
+
+.tov-background {
+    background-size:530px 180px;
+    background-image:url(../resources/trial/background.png);
 }
 
 .en-background {
