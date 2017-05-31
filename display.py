@@ -26,10 +26,10 @@ class Display(webapp2.RequestHandler):
 
         self.response.write('<table>\n')
 
-        groups = ctrpmodels.Group.query_for_t19_display()
+        groups = ctrpmodels.Group.query_for_t20_display()
         for group in groups:
             template_values = {'group' : group}
-            template = JINJA_ENVIRONMENT.get_template('templates/group-t19.html')
+            template = JINJA_ENVIRONMENT.get_template('templates/group-t20.html')
             self.response.write(template.render(template_values))
 
         self.response.write('</table>\n')
@@ -47,8 +47,8 @@ class Display(webapp2.RequestHandler):
         self.response.write('content: function() {\n')
         self.response.write('var tooltips = {};\n')
         
-        groups = ctrpmodels.Group.query_for_t19_display()
-        for raid in ['en','nh','tov']:
+        groups = ctrpmodels.Group.query_for_t20_display()
+        for raid in ['tomb']:
             for group in groups:
                 normaltext = ""
                 heroictext = ""
@@ -156,9 +156,7 @@ class DisplayHistory(webapp2.RequestHandler):
 
                     template_values = {
                         'history': u,
-                        'num_en_bosses': ctrpmodels.Constants.num_en_bosses,
-                        'num_nh_bosses': ctrpmodels.Constants.num_nh_bosses,
-                        'num_tov_bosses': ctrpmodels.Constants.num_tov_bosses,
+                        'num_tomb_bosses': ctrpmodels.Constants.num_tomb_bosses
                     }
                     template = JINJA_ENVIRONMENT.get_template(
                         'templates/history.html')
@@ -200,9 +198,7 @@ class DisplayHistory(webapp2.RequestHandler):
             for u in entries:
                 template_values = {
                     'history': u,
-                    'num_en_bosses': ctrpmodels.Constants.num_en_bosses,
-                    'num_nh_bosses': ctrpmodels.Constants.num_nh_bosses,
-                    'num_tov_bosses': ctrpmodels.Constants.num_tov_bosses,
+                    'num_tomb_bosses': ctrpmodels.Constants.num_tomb_bosses,
                 }
                 template = JINJA_ENVIRONMENT.get_template(
                     'templates/group-history.html')

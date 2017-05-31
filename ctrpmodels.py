@@ -12,19 +12,13 @@ from google.appengine.ext import ndb
 
 class Constants:
 
-    enname = "The Emerald Nightmare"
-    nhname = "The Nighthold"
-    tovname = "Trial of Valor"
+    tombname = "Tomb of Sargeras"
 
-    raids = [enname, nhname, tovname]
+    raids = [tombname]
 
-    enbosses = ['Nythendra','Il\'gynoth, Heart of Corruption','Elerethe Renferal','Ursoc','Dragons of Nightmare','Cenarius','Xavius']
-    nhbosses = ['Skorpyron','Chronomatic Anomaly','Trilliax','Spellblade Aluriel','High Botanist Tel\'arn','Star Augur Etraeus','Tichondrius','Krosus','Grand Magistrix Elisande','Gul\'dan']
-    tovbosses = ['Odyn','Guarm','Helya']
+    tombbosses = ['Goroth','Demonic Inquisition','Harjatan','Mistress Sassz\'ine','Sisters of the Moon','The Desolate Host','Maiden of Vigilance','Fallen Avatar','Kil\'jaeden']
 
-    num_en_bosses = len(enbosses)
-    num_nh_bosses = len(nhbosses)
-    num_tov_bosses = len(tovbosses)
+    num_tomb_bosses = len(tombbosses)
 
     difficulties = ['normal','heroic','mythic']
 
@@ -56,12 +50,19 @@ class Group(ndb.Model):
     # TODO: i'd rather this be a list of raids so it's a bit more easy to extend
     # but it makes the queries harder and makes the data stored in the database
     # more opaque
-    en = ndb.StructuredProperty(Raid, required = True)
-    nh = ndb.StructuredProperty(Raid, required = True)
-    tov = ndb.StructuredProperty(Raid, required = True)
+    tomb = ndb.StructuredProperty(Raid, required = True)
     lastupdated = ndb.DateTimeProperty()
     rosterupdated = ndb.DateProperty()
     avgilvl = ndb.IntegerProperty(default = 0)
+
+    # Query used in display.py to get a consistent set of data for both the graphical
+    # and text displays.  This is for tier 20 data (Tomb).. This is the model for a
+    # single-raid tier.
+    @classmethod
+    def query_for_t20_display(self):
+        q = self.query().order(-Group.tomb.mythic, -Group.tomb.heroic, -Group.tomb.normal).order(Group.name)
+        results = q.fetch()
+        return results
 
     # Query used in display.py to get a consistent set of data for both the graphical
     # and text displays.  This is for tier 19 data (EN, NH). This is the model for a
@@ -69,15 +70,6 @@ class Group(ndb.Model):
     @classmethod
     def query_for_t19_display(self):
         q = self.query().order(-Group.nh.mythic, -Group.nh.heroic, -Group.tov.mythic, -Group.en.mythic, -Group.nh.normal, -Group.tov.heroic, -Group.en.heroic, -Group.tov.normal, -Group.en.normal).order(Group.name)
-        results = q.fetch()
-        return results
-
-    # Query used in display.py to get a consistent set of data for both the graphical
-    # and text displays.  This is for tier 18 data (HFC). This is the model for a
-    # single-raid tier.
-    @classmethod
-    def query_for_t18_display(self):
-        q = self.query().order(-Group.hfc.mythic, -Group.hfc.heroic, -Group.hfc.normal).order(Group.name)
         results = q.fetch()
         return results
 
@@ -95,10 +87,47 @@ class RaidHistory(ndb.Model):
 class History(ndb.Model):
     group = ndb.StringProperty(required = True)
     date = ndb.DateProperty(required = True)
-    en = ndb.StructuredProperty(RaidHistory, required = True)
-    nh = ndb.StructuredProperty(RaidHistory, required = True)
-    tov = ndb.StructuredProperty(RaidHistory, required = True)
+    tomb = ndb.StructuredProperty(RaidHistory, required = True)
     tweeted = ndb.BooleanProperty(default = False, required = True)
+
+class MigrateT19toT20(webapp2.RequestHandler):
+    def get(self):
+        q = Group.query()
+        groups = q.fetch()
+
+        for group in groups:
+            if 'en' in group._properties:
+                del group._properties['en']
+            if 'nh' in group._properties:
+                del group._properties['nh']
+            if 'tov' in group._properties:
+                del group._properties['tov']
+
+            group.tomb = Raid()
+            group.tomb.raidname = Constants.tombname
+            group.tomb.bosses = list()
+            for boss in Constants.tombbosses:
+                newboss = Boss(name = boss)
+                group.tomb.bosses.append(newboss)
+
+            logging.info(group)
+            group.put()
+
+        q = History.query()
+        histories = q.fetch()
+        for hist in histories:
+            if 'en' in hist._properties:
+                del hist._properties['en']
+            if 'nh' in hist._properties:
+                del hist._properties['nh']
+            if 'tov' in hist._properties:
+                del hist._properties['tov']
+
+            hist.tomb = ctrpmodels.RaidHistory()
+            hist.tomb.mythic = list()
+            hist.tomb.heroic = list()
+            hist.tomb.normal = list()
+            hist.put()
 
 class MigrateT18toT19(webapp2.RequestHandler):
     def get(self):

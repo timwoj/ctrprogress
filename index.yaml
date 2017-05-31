@@ -48,6 +48,16 @@ indexes:
     direction: desc
   - name: name
 
+- kind: Group
+  properties:
+  - name: tomb.mythic
+    direction: desc
+  - name: tomb.heroic
+    direction: desc
+  - name: tomb.normal
+    direction: desc
+  - name: name
+
 - kind: History
   properties:
   - name: date

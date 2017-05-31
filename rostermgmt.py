@@ -197,23 +197,11 @@ class RosterBuilder(webapp2.RequestHandler):
             # toons.
             if (len(toons) >= 5):
                 newgroup = Group(name=name)
-                newgroup.en = Raid()
-                newgroup.en.bosses = list()
-                for boss in Constants.enbosses:
+                newgroup.tomb = Raid()
+                newgroup.tomb.bosses = list()
+                for boss in Constants.tombbosses:
                     newboss = Boss(name = boss)
-                    newgroup.en.bosses.append(newboss)
-
-                newgroup.nh = Raid()
-                newgroup.nh.bosses = list()
-                for boss in Constants.nhbosses:
-                    newboss = Boss(name = boss)
-                    newgroup.nh.bosses.append(newboss)
-
-                newgroup.tov = Raid()
-                newgroup.tov.bosses = list()
-                for boss in Constants.tovbosses:
-                    newboss = Boss(name = boss)
-                    newgroup.tov.bosses.append(newboss)
+                    newgroup.tomb.bosses.append(newboss)
 
                 newgroup.toons = toons
                 newgroup.rosterupdated = datetime.date.today()

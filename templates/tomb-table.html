@@ -1,0 +1,27 @@
+<table class="table-background tomb-background">
+  <thead>
+    <tr>
+      <th colspan="14" class="table-header">Tomb of Sargeras</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="tombheaderchiclet tombmythicheader" ttid="{{ group.name | normalize }}-tomb-mythic-header">Mythic {{ group.tomb.mythic }}/9</td>
+      {% for n in range(9) -%}
+      <td><img src="../resources/tomb/chiclet-mythic.png" height="32" width="33"{% if group.tomb.mythic < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
+    </tr>
+    <tr>
+      <td class="tombheaderchiclet tombheroicheader" ttid="{{ group.name | normalize }}-tomb-heroic-header">Heroic {{ group.tomb.heroic }}/9</td>
+      {% for n in range(9) -%}
+      <td><img src="../resources/tomb/chiclet-heroic.png" height="32" width="33"{% if group.tomb.heroic < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
+    </tr>
+    <tr>
+      <td class="tombheaderchiclet tombnormalheader" ttid="{{ group.name | normalize }}-tomb-normal-header">Normal {{ group.tomb.normal }}/9</td>
+      {% for n in range(9) -%}
+      <td><img src="../resources/tomb/chiclet-normal.png" height="32" width="33"{% if group.tomb.normal < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
+    </tr>
+  </tbody>
+</table>
