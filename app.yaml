@@ -40,6 +40,10 @@ handlers:
   static_files: templates/tier18.html
   upload: templates/tier18\.html
 
+- url: /tier19\.html
+  static_files: templates/tier19.html
+  upload: templates/tier19\.html
+
 - url: /startrank
   script: main.app
   login: admin
