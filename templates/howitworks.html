@@ -5,21 +5,21 @@
   <body style="background-color:#d3d3d3;margin-left:30px;margin-right:40px">
     <div align="center">
       <a href="/"><img src="/resources/header.png"></a><p/>
-      <a href="/howitworks.html">How It Works</a> | <a href="/history">History</a> | <a href="/tier17.html">Tier 17</a>
+      <a href="/howitworks.html">How It Works</a> | <a href="/history">History</a> | <a href="/tier17.html">Tier 17</a> | <a href="/tier18.html">Tier 18</a> | <a href="/tier19.html">Tier 19</a>
       <h1>How It Works</h1>
     </div>
     <ol>
-      <li>A list of toons for each team is culled from Knate's Master Raid Team List spreadsheet.</li>
+      <li>A list of toons for each team is culled from the Convert To Raid Raid Team Builder tool.</li>
       <li>We loop through the list of teams, and gather progression data for each toon using the Battle.net API.</li>
       <li>Using that toon data, progression for the team is built using the last-killed time for each boss in the current raid tier.  For each boss, if five or more toons have the same last-killed time, then that kill is considered a progression kill for the team as a whole.</li>
       <li>This progression data is regenerated every morning at 2AM Arizona time. Prior progression for a team is never erased, only updated, so a team will never go backwards in progression.</li>
       <li>Teams are ordered on the display page using the following order: M HC > H HC > N HC. In the case of ties, the groups are listed in alphabetical order</li>
-      <li>Group Item Level may appear lower than is actually the case. This is due to alternates and bench characters being taken into consideration when overall calculation is made.</li>
     </ol><p/>
 
     If errors are found in the way that progression is calculated, your team has incorrect information displayed, or for any other questions on how this works, contact Tamen on Aerie Peak or @tamenctr on Twitter.
     <p/>
+    <hr style="width:80%"/>
     <div style='clear: both;font-size: 14px;text-align:center'>Site code by Tamen - Aerie Peak(US) &#149; <a href='http://github.com/timwoj/ctrprogress'>http://github.com/timwoj/ctrprogress<a/></div><br/>
-    <div style='font-size:14px;text-align:center'>This is a community project from the Threat Level Midnight raid group in the Convert to Raid family of guilds - Aerie Peak(US) and is not directly affiliated with the Convert to Raid podcast or Signals Media.</div>
+    <div style='font-size:14px;text-align:center;margin-left:10%;margin-right:10%'>This is a community project from the Threat Level Midnight raid group in the Convert to Raid family of guilds - Aerie Peak(US) and is not directly affiliated with the Convert to Raid podcast or Signals Media.</div>
   </body>
 </html>
