@@ -113,22 +113,6 @@ class MigrateT19toT20(webapp2.RequestHandler):
             logging.info(group)
             group.put()
 
-        q = History.query()
-        histories = q.fetch()
-        for hist in histories:
-            if 'en' in hist._properties:
-                del hist._properties['en']
-            if 'nh' in hist._properties:
-                del hist._properties['nh']
-            if 'tov' in hist._properties:
-                del hist._properties['tov']
-
-            hist.tomb = ctrpmodels.RaidHistory()
-            hist.tomb.mythic = list()
-            hist.tomb.heroic = list()
-            hist.tomb.normal = list()
-            hist.put()
-
 class MigrateT18toT19(webapp2.RequestHandler):
     def get(self):
         q = Group.query()
@@ -181,7 +165,7 @@ class MigrateAddToV(webapp2.RequestHandler):
         q = History.query()
         histories = q.fetch()
         for hist in histories:
-            hist.tov = ctrpmodels.RaidHistory()
+            hist.tov = RaidHistory()
             hist.tov.mythic = list()
             hist.tov.heroic = list()
             hist.tov.normal = list()
