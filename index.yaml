@@ -12,6 +12,16 @@ indexes:
 
 - kind: Group
   properties:
+  - name: antorus.mythic
+    direction: desc
+  - name: antorus.heroic
+    direction: desc
+  - name: antorus.normal
+    direction: desc
+  - name: name
+
+- kind: Group
+  properties:
   - name: nh.mythic
     direction: desc
   - name: nh.heroic

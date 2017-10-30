@@ -12,13 +12,12 @@ from google.appengine.ext import ndb
 
 class Constants:
 
-    tombname = "Tomb of Sargeras"
+    antorusname = "Antorus"
+    raids = [antorusname]
 
-    raids = [tombname]
+    antorusbosses = ['Garothi Worldbreaker','Felhounds of Sargeras','Antoran High Command','Portal Keeper Hasabel','Eonar the Life-Binder','Imonar the Soulhunter','Kin\'garoth','Varimathras','The Coven of Shivarra','Aggramar','Argus the Unmaker']
 
-    tombbosses = ['Goroth','Demonic Inquisition','Harjatan','Mistress Sassz\'ine','Sisters of the Moon','The Desolate Host','Maiden of Vigilance','Fallen Avatar','Kil\'jaeden']
-
-    num_tomb_bosses = len(tombbosses)
+    num_antorus_bosses = len(antorusbosses)
 
     difficulties = ['normal','heroic','mythic']
 
@@ -50,17 +49,17 @@ class Group(ndb.Model):
     # TODO: i'd rather this be a list of raids so it's a bit more easy to extend
     # but it makes the queries harder and makes the data stored in the database
     # more opaque
-    tomb = ndb.StructuredProperty(Raid, required = True)
+    antorus = ndb.StructuredProperty(Raid, required = True)
     lastupdated = ndb.DateTimeProperty()
     rosterupdated = ndb.DateProperty()
     avgilvl = ndb.IntegerProperty(default = 0)
 
     # Query used in display.py to get a consistent set of data for both the graphical
-    # and text displays.  This is for tier 20 data (Tomb).. This is the model for a
+    # and text displays.  This is for tier 21 data (Antorus).. This is the model for a
     # single-raid tier.
     @classmethod
-    def query_for_t20_display(self):
-        q = self.query().order(-Group.tomb.mythic, -Group.tomb.heroic, -Group.tomb.normal).order(Group.name)
+    def query_for_t21_display(self):
+        q = self.query().order(-Group.antorus.mythic, -Group.antorus.heroic, -Group.antorus.normal).order(Group.name)
         results = q.fetch()
         return results
 
@@ -87,8 +86,27 @@ class RaidHistory(ndb.Model):
 class History(ndb.Model):
     group = ndb.StringProperty(required = True)
     date = ndb.DateProperty(required = True)
-    tomb = ndb.StructuredProperty(RaidHistory, required = True)
+    antorus = ndb.StructuredProperty(RaidHistory, required = True)
     tweeted = ndb.BooleanProperty(default = False, required = True)
+
+class MigrateT20toT21(webapp2.RequestHandler):
+    def get(self):
+        q = Group.query()
+        groups = q.fetch()
+
+        for group in groups:
+            if 'tomb' in group._properties:
+                del group._properties['tomb']
+
+            group.antorus = Raid()
+            group.antorus.raidname = Constants.antorusname
+            group.antorus.bosses = list()
+            for boss in Constants.antorusbosses:
+                newboss = Boss(name = boss)
+                group.antorus.bosses.append(newboss)
+
+            logging.info(group)
+            group.put()
 
 class MigrateT19toT20(webapp2.RequestHandler):
     def get(self):

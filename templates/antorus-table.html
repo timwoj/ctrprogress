@@ -1,0 +1,27 @@
+<table class="table-background antorus-background">
+  <thead>
+    <tr>
+      <th colspan="16" class="table-header">Antorus</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="antorusheaderchiclet antorusmythicheader" ttid="{{ group.name | normalize }}-antorus-mythic-header">Mythic {{ group.antorus.mythic }}/11</td>
+      {% for n in range(11) -%}
+      <td><img src="../resources/antorus/chiclet-mythic.png" height="32" width="33"{% if group.antorus.mythic < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
+    </tr>
+    <tr>
+      <td class="antorusheaderchiclet antorusheroicheader" ttid="{{ group.name | normalize }}-antorus-heroic-header">Heroic {{ group.antorus.heroic }}/11</td>
+      {% for n in range(11) -%}
+      <td><img src="../resources/antorus/chiclet-heroic.png" height="32" width="33"{% if group.antorus.heroic < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
+    </tr>
+    <tr>
+      <td class="antorusheaderchiclet antorusnormalheader" ttid="{{ group.name | normalize }}-antorus-normal-header">Normal {{ group.antorus.normal }}/11</td>
+      {% for n in range(11) -%}
+      <td><img src="../resources/antorus/chiclet-normal.png" height="32" width="33"{% if group.antorus.normal < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
+    </tr>
+  </tbody>
+</table>

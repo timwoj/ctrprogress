@@ -26,10 +26,10 @@ class Display(webapp2.RequestHandler):
 
         self.response.write('<table>\n')
 
-        groups = ctrpmodels.Group.query_for_t20_display()
+        groups = ctrpmodels.Group.query_for_t21_display()
         for group in groups:
             template_values = {'group' : group}
-            template = JINJA_ENVIRONMENT.get_template('templates/group-t20.html')
+            template = JINJA_ENVIRONMENT.get_template('templates/group-t21.html')
             self.response.write(template.render(template_values))
 
         self.response.write('</table>\n')
@@ -47,8 +47,8 @@ class Display(webapp2.RequestHandler):
         self.response.write('content: function() {\n')
         self.response.write('var tooltips = {};\n')
         
-        groups = ctrpmodels.Group.query_for_t20_display()
-        for raid in ['tomb']:
+        groups = ctrpmodels.Group.query_for_t21_display()
+        for raid in ['antorus']:
             for group in groups:
                 normaltext = ""
                 heroictext = ""
@@ -157,7 +157,7 @@ class DisplayHistory(webapp2.RequestHandler):
 
                     template_values = {
                         'history': u,
-                        'num_tomb_bosses': ctrpmodels.Constants.num_tomb_bosses
+                        'num_antorus_bosses': ctrpmodels.Constants.num_antorus_bosses
                     }
                     template = JINJA_ENVIRONMENT.get_template(
                         'templates/history.html')
@@ -199,7 +199,7 @@ class DisplayHistory(webapp2.RequestHandler):
             for u in entries:
                 template_values = {
                     'history': u,
-                    'num_tomb_bosses': ctrpmodels.Constants.num_tomb_bosses,
+                    'num_antorus_bosses': ctrpmodels.Constants.num_antorus_bosses,
                 }
                 template = JINJA_ENVIRONMENT.get_template(
                     'templates/group-history.html')
