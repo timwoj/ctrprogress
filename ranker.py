@@ -169,7 +169,11 @@ class ProgressBuilder(webapp2.RequestHandler):
 
             # this filters the raid data down to just the raid we're looking
             # at this pass
-            raid = [d for d in raids if d['name'] == raidname][0]
+            filtered = [d for d in raids if d['name'] == raidname]
+            if len(filtered) == 0:
+                continue
+            else:
+                raid = filtered[0]
 
             # loop through the individual bosses and get the timestamp for
             # the last kill for this toon for each boss
