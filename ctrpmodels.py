@@ -12,7 +12,7 @@ from google.appengine.ext import ndb
 
 class Constants:
 
-    antorusname = "Antorus"
+    antorusname = "Antorus, the Burning Throne"
     raids = [antorusname]
 
     antorusbosses = ['Garothi Worldbreaker','Felhounds of Sargeras','Antoran High Command','Portal Keeper Hasabel','Eonar the Life-Binder','Imonar the Soulhunter','Kin\'garoth','Varimathras','The Coven of Shivarra','Aggramar','Argus the Unmaker']
