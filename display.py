@@ -176,9 +176,10 @@ class DisplayHistory(webapp2.RequestHandler):
         r = q.fetch()
 
         lastupdated = r[0].lastupdated
+#        lastupdated = datetime.datetime.now()
 
         template_values = {
-            'last_updated': r[0].lastupdated,
+            'last_updated': lastupdated,
             'title' : 'History'
         }
         template = JINJA_ENVIRONMENT.get_template('templates/header.html')
