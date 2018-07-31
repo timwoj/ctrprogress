@@ -197,11 +197,11 @@ class RosterBuilder(webapp2.RequestHandler):
             # toons.
             if (len(toons) >= 5):
                 newgroup = Group(name=name)
-                newgroup.antorus = Raid()
-                newgroup.antorus.bosses = list()
-                for boss in Constants.antorusbosses:
+                newgroup.uldir = Raid()
+                newgroup.uldir.bosses = list()
+                for boss in Constants.uldirbosses:
                     newboss = Boss(name = boss)
-                    newgroup.antorus.bosses.append(newboss)
+                    newgroup.uldir.bosses.append(newboss)
 
                 newgroup.toons = toons
                 newgroup.rosterupdated = datetime.date.today()
@@ -244,9 +244,9 @@ class RosterBuilder(webapp2.RequestHandler):
 
         jsondata = json.loads(response.content)
 
-#        query = Group.query(Group.name == "Blame The Hunter")
+#        query = Group.query(Group.name == "Threat Level Midnight")
 #        results = query.fetch()
-#        results[0].name = "Blame the Hunter"
+#        results[0].name = "Threat Level Midnight"
 #        results[0].put()
 #        return
 

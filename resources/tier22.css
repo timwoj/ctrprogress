@@ -1,0 +1,29 @@
+.uldirheaderchiclet {
+    text-align:center;
+    width:110px;
+    height:33px;
+    background-size:110px 33px;
+    background-repeat:no-repeat;
+    background-position:0px 1px;
+    font-family:quadrata;
+    font-size:14px;
+}
+
+.uldirnormalheader {
+    background-image:url('../resources/uldir/header-normal.png');
+}
+
+.uldirheroicheader {
+    background-image:url('../resources/uldir/header-heroic.png');
+    color:white;
+}
+
+.uldirmythicheader {
+    background-image:url('../resources/uldir/header-mythic.png');
+    color:white;
+}
+
+.uldir-background {
+    background-size:650px 180px;
+    background-image:url(../resources/uldir/background.png);
+}

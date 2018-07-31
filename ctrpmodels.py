@@ -12,14 +12,13 @@ from google.appengine.ext import ndb
 
 class Constants:
 
-    antorusname = "Antorus, the Burning Throne"
-    raids = [antorusname]
-
-    antorusbosses = ['Garothi Worldbreaker','Felhounds of Sargeras','Antoran High Command','Portal Keeper Hasabel','Eonar the Life-Binder','Imonar the Soulhunter','Kin\'garoth','Varimathras','The Coven of Shivarra','Aggramar','Argus the Unmaker']
-
-    num_antorus_bosses = len(antorusbosses)
+    uldirname = 'Uldir'
+    uldirbosses = ["Taloc", "MOTHER", "Fetid Devourer", "Zek'voz, Herald of N'zoth", "Vectis", "Zul, Reborn", "Mythrax the Unraveler", "G'huun"]
 
     difficulties = ['normal','heroic','mythic']
+
+    raidnames = [uldirname]
+    raids = [('uldir',uldirname, uldirbosses)]
 
 # Model for a single boss in a raid instance.  Keeps track of whether a boss has been
 # killed for each of the difficulties.  There will be multiple of these in each Raid
@@ -49,25 +48,23 @@ class Group(ndb.Model):
     # TODO: i'd rather this be a list of raids so it's a bit more easy to extend
     # but it makes the queries harder and makes the data stored in the database
     # more opaque
-    antorus = ndb.StructuredProperty(Raid, required = True)
+    uldir = ndb.StructuredProperty(Raid, required = True)
     lastupdated = ndb.DateTimeProperty()
     rosterupdated = ndb.DateProperty()
     avgilvl = ndb.IntegerProperty(default = 0)
 
     # Query used in display.py to get a consistent set of data for both the graphical
-    # and text displays.  This is for tier 21 data (Antorus).. This is the model for a
-    # single-raid tier.
+    # and text displays.
     @classmethod
-    def query_for_t21_display(self):
-        q = self.query().order(-Group.antorus.mythic, -Group.antorus.heroic, -Group.antorus.normal).order(Group.name)
+    def query_for_singletier_display(self):
+        q = self.query().order(-Group.uldir.mythic, -Group.uldir.heroic, -Group.uldir.normal).order(Group.name)
         results = q.fetch()
         return results
 
     # Query used in display.py to get a consistent set of data for both the graphical
-    # and text displays.  This is for tier 19 data (EN, NH). This is the model for a
-    # split tier.
+    # and text displays.
     @classmethod
-    def query_for_t19_display(self):
+    def query_for_splittier_display(self):
         q = self.query().order(-Group.nh.mythic, -Group.nh.heroic, -Group.tov.mythic, -Group.en.mythic, -Group.nh.normal, -Group.tov.heroic, -Group.en.heroic, -Group.tov.normal, -Group.en.normal).order(Group.name)
         results = q.fetch()
         return results
@@ -86,24 +83,24 @@ class RaidHistory(ndb.Model):
 class History(ndb.Model):
     group = ndb.StringProperty(required = True)
     date = ndb.DateProperty(required = True)
-    antorus = ndb.StructuredProperty(RaidHistory, required = True)
+    uldir = ndb.StructuredProperty(RaidHistory, required = True)
     tweeted = ndb.BooleanProperty(default = False, required = True)
 
-class MigrateT20toT21(webapp2.RequestHandler):
+class MigrateT21toT22(webapp2.RequestHandler):
     def get(self):
         q = Group.query()
         groups = q.fetch()
 
         for group in groups:
-            if 'tomb' in group._properties:
-                del group._properties['tomb']
+            if 'antorus' in group._properties:
+                del group._properties['antorus']
 
-            group.antorus = Raid()
-            group.antorus.raidname = Constants.antorusname
-            group.antorus.bosses = list()
-            for boss in Constants.antorusbosses:
+            group.uldir = Raid()
+            group.uldir.raidname = Constants.uldirname
+            group.uldir.bosses = list()
+            for boss in Constants.uldirbosses:
                 newboss = Boss(name = boss)
-                group.antorus.bosses.append(newboss)
+                group.uldir.bosses.append(newboss)
 
             logging.info(group)
             group.put()
@@ -129,37 +126,6 @@ class MigrateT19toT20(webapp2.RequestHandler):
                 group.tomb.bosses.append(newboss)
 
             logging.info(group)
-            group.put()
-
-class MigrateT18toT19(webapp2.RequestHandler):
-    def get(self):
-        q = Group.query()
-        groups = q.fetch()
-
-        for group in groups:
-            if 'hfc' in group._properties:
-                del group._properties['hfc']
-            if 'brf' in group._properties:
-                del group._properties['brf']
-            if 'hm' in group._properties:
-                del group._properties['hm']
-
-            group.nh = Raid()
-            group.nh.raidname = Constants.nhname
-            group.nh.bosses = list()
-            for boss in Constants.nhbosses:
-                newboss = Boss(name = boss)
-                group.nh.bosses.append(newboss)
-
-            group.en = Raid()
-            group.en.raidname = Constants.enname
-            group.en.bosses = list()
-            for boss in Constants.enbosses:
-                newboss = Boss(name = boss)
-                group.en.bosses.append(newboss)
-
-            logging.info(group)
-
             group.put()
 
 class MigrateAddToV(webapp2.RequestHandler):
