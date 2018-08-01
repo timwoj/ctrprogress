@@ -19,7 +19,8 @@ class Display(webapp2.RequestHandler):
         r = q.fetch()
         template_values = {
             'last_updated': datetime.datetime.now(),
-            'title' : 'Main'
+            'title' : 'Main',
+            'tier': 22
         }
         template = JINJA_ENVIRONMENT.get_template('templates/header.html')
         self.response.write(template.render(template_values))
@@ -29,7 +30,7 @@ class Display(webapp2.RequestHandler):
         groups = ctrpmodels.Group.query_for_singletier_display()
         for group in groups:
             template_values = {'group' : group}
-            template = JINJA_ENVIRONMENT.get_template('templates/group-t22.html')
+            template = JINJA_ENVIRONMENT.get_template('templates/group-raids.html')
             self.response.write(template.render(template_values))
 
         self.response.write('</table>\n')
@@ -209,6 +210,23 @@ class DisplayHistory(webapp2.RequestHandler):
 
             self.response.write('</table>\n')
             
+        template_values = {}
+        template = JINJA_ENVIRONMENT.get_template('templates/footer.html')
+        self.response.write(template.render(template_values))
+
+class DisplayTier(webapp2.RequestHandler):
+    def get(self, tier_number):
+        template_values = {
+            'title' : 'Tier %s' % tier_number,
+            'tier': tier_number
+        }
+        template = JINJA_ENVIRONMENT.get_template('templates/header.html')
+        self.response.write(template.render(template_values))
+
+        template_values = {}
+        template = JINJA_ENVIRONMENT.get_template('templates/tier%s.html' % tier_number)
+        self.response.write(template.render(template_values))
+
         template_values = {}
         template = JINJA_ENVIRONMENT.get_template('templates/footer.html')
         self.response.write(template.render(template_values))

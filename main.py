@@ -21,14 +21,15 @@ import ranker
 import rostermgmt
 
 app = webapp2.WSGIApplication([
-    ('/', display.Display),
-    ('/history', display.DisplayHistory),
-    ('/loadgroups', rostermgmt.RosterBuilder),
-    ('/rank', ranker.Ranker),
-    ('/builder', ranker.ProgressBuilder),
-    ('/migrate', ctrpmodels.MigrateT21toT22),
-    webapp2.Route('/fixgroupnames', rostermgmt.RosterBuilder, handler_method='fix_groupnames'),
-    webapp2.Route('/tooltips.js', display.Display, handler_method='build_tooltips'),
-    webapp2.Route('/loadone', ranker.ProgressBuilder, handler_method='loadone'),
-    webapp2.Route('/startrank', ranker.Ranker, handler_method='post'),
+    (r'/', display.Display),
+    (r'/history', display.DisplayHistory),
+    (r'/loadgroups', rostermgmt.RosterBuilder),
+    (r'/rank', ranker.Ranker),
+    (r'/builder', ranker.ProgressBuilder),
+    (r'/migrate', ctrpmodels.MigrateT21toT22),
+    (r'/tier(\d+)', display.DisplayTier),
+    webapp2.Route(r'/fixgroupnames', rostermgmt.RosterBuilder, handler_method='fix_groupnames'),
+    webapp2.Route(r'/tooltips.js', display.Display, handler_method='build_tooltips'),
+    webapp2.Route(r'/loadone', ranker.ProgressBuilder, handler_method='loadone'),
+    webapp2.Route(r'/startrank', ranker.Ranker, handler_method='post'),
 ], debug=True)
