@@ -1,7 +1,11 @@
 For development, run the following commands from the top level:
 
+    echo "[install]
+    prefix=" > ~/.pydistutils.cfg
+
     mkdir lib
-    pip install -t lib -r pip_deps.txt
+    pip install -t lib -r pip_deps.txt --upgrade
+    rm ~/.pydistutils.cfg
 
 Copy the API key for Blizzard's API into the api-auth.json file as the "blizzard" entry.
 

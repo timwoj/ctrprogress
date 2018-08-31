@@ -1,5 +1,3 @@
-google-api-python-client
 futures
-git+https://github.com/google/gdata-python-client.git
 python-twitter
 gaepytz
