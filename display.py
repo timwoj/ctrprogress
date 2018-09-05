@@ -49,14 +49,15 @@ class Display(webapp2.RequestHandler):
         self.response.write('var tooltips = {};\n')
         
         groups = ctrpmodels.Group.query_for_singletier_display()
-        for raid in ctrpmodels.Constants.raidnames:
+        for raidinfo in ctrpmodels.Constants.raids:
+            raid = raidinfo[0]
             for group in groups:
                 normaltext = ""
                 heroictext = ""
                 mythictext = ""
                 bosses = []
-                groupraid = getattr(group,raid)
-                raidbosses = getattr(ctrpmodels.Constants,raid+'bosses')
+                groupraid = getattr(group, raid)
+                raidbosses = getattr(ctrpmodels.Constants, raid+'bosses')
                 
                 for boss in groupraid.bosses:
                     bosses.append((boss.name, boss.normaldead, boss.heroicdead, boss.mythicdead))
