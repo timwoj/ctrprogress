@@ -3,16 +3,19 @@
 #!/usr/bin/env python
 
 # External imports
-import webapp2,jinja2,os,datetime,json,time
+import webapp2
+import jinja2
+import os
+import datetime
+import json
+import time
 import logging
 import twitter
 
 # Imports from google
 from google.appengine.ext import ndb
-from google.appengine.api.memcache import Client
 from google.appengine.api import taskqueue
 from google.appengine.api.taskqueue import Queue
-from google.appengine.api.taskqueue import QueueStatistics
 from google.appengine.api.taskqueue import Task
 
 # Internal imports
