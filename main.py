@@ -26,7 +26,7 @@ app = webapp2.WSGIApplication([
     (r'/loadgroups', rostermgmt.RosterBuilder),
     (r'/rank', ranker.Ranker),
     (r'/builder', ranker.ProgressBuilder),
-    (r'/migrate', ctrpmodels.MigrateT21toT22),
+    (r'/migrate', ctrpmodels.MigrateT22toT23),
     (r'/tier(\d+)', display.DisplayTier),
     webapp2.Route(r'/fixgroupnames', rostermgmt.RosterBuilder, handler_method='fix_groupnames'),
     webapp2.Route(r'/tooltips.js', display.Display, handler_method='build_tooltips'),

@@ -1,0 +1,58 @@
+.bodheaderchiclet {
+    text-align:center;
+    width:110px;
+    height:33px;
+    background-size:110px 33px;
+    background-repeat:no-repeat;
+    background-position:0px 1px;
+    font-family:quadrata;
+    font-size:14px;
+}
+
+.bodnormalheader {
+    background-image:url('../resources/bod/header-normal.png');
+}
+
+.bodheroicheader {
+    background-image:url('../resources/bod/header-heroic.png');
+}
+
+.bodmythicheader {
+    background-image:url('../resources/bod/header-mythic.png');
+    color: white;
+}
+
+.bod-background {
+    background-size:530px 180px;
+    background-image:url(../resources/bod/background.png);
+}
+
+.cosheaderchiclet {
+    text-align:center;
+    width:90px;
+    height:33px;
+    background-size:90px 33px;
+    background-repeat:no-repeat;
+    background-position:0px 1px;
+    font-family:quadrata;
+    font-size:14px;
+}
+
+.cosnormalheader {
+    background-image:url('../resources/crucible/header-normal.png');
+}
+
+.cosheroicheader {
+    background-image:url('../resources/crucible/header-heroic.png');
+}
+
+.cosmythicheader {
+    background-image:url('../resources/crucible/header-mythic.png');
+    color:white;
+}
+
+.cos-background {
+    background-size:500px 180px;
+    background-image:url(../resources/crucible/background.png);
+    background-color:rgba(0, 0, 0, 0.1);
+}

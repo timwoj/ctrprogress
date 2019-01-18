@@ -20,7 +20,7 @@ class Display(webapp2.RequestHandler):
         template_values = {
             'last_updated': datetime.datetime.now(),
             'title' : 'Main',
-            'tier': 22
+            'tier': 23
         }
         template = JINJA_ENVIRONMENT.get_template('templates/header.html')
         self.response.write(template.render(template_values))
@@ -159,7 +159,7 @@ class DisplayHistory(webapp2.RequestHandler):
 
                     template_values = {
                         'history': u,
-                        'num_uldir_bosses': len(ctrpmodels.Constants.uldirbosses)
+                        'num_bod_bosses': len(ctrpmodels.Constants.bodbosses)
                     }
                     template = JINJA_ENVIRONMENT.get_template(
                         'templates/history.html')
@@ -202,7 +202,7 @@ class DisplayHistory(webapp2.RequestHandler):
             for u in entries:
                 template_values = {
                     'history': u,
-                    'num_uldir_bosses': len(ctrpmodels.Constants.uldirbosses)
+                    'num_bod_bosses': len(ctrpmodels.Constants.bodbosses)
                 }
                 template = JINJA_ENVIRONMENT.get_template(
                     'templates/group-history.html')

@@ -66,7 +66,7 @@ class ProgressBuilder(webapp2.RequestHandler):
         importer.load(group.toons, data)
 
         progress = dict()
-        self.parse(Constants.uldirbosses, data, Constants.uldirname, progress, writeDB)
+        self.parse(Constants.bodbosses, data, Constants.bodname, progress, writeDB)
 
         # calculate the avg ilvl values from the toon data
         group.avgilvl = 0
@@ -125,10 +125,10 @@ class ProgressBuilder(webapp2.RequestHandler):
                     if (new_hist == None):
                         new_hist = ctrpmodels.History(group=group.name)
                         new_hist.date = datetime.date.today()
-                        new_hist.uldir = ctrpmodels.RaidHistory()
-                        new_hist.uldir.mythic = list()
-                        new_hist.uldir.heroic = list()
-                        new_hist.uldir.normal = list()
+                        new_hist.bod = ctrpmodels.RaidHistory()
+                        new_hist.bod.mythic = list()
+                        new_hist.bod.heroic = list()
+                        new_hist.bod.normal = list()
                         
                     raidhist = getattr(new_hist, raid[0])
 
@@ -335,7 +335,7 @@ class Test(webapp2.RequestHandler):
 
             progress = dict()
             rank = ProgressBuilder()
-            rank.parse(Constants.difficulties, Constants.uldirbosses, data, Constants.uldirname, progress)
+            rank.parse(Constants.difficulties, Constants.bodbosses, data, Constants.bodname, progress)
             logging.info("Finished parsing data")
 
             logging.info(progress)

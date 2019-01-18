@@ -1,0 +1,27 @@
+<table class="table-background bod-background">
+  <thead>
+    <tr>
+      <th colspan="16" class="table-header">Battle of Dazar'alor</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="bodheaderchiclet bodmythicheader" ttid="{{ group.name | normalize }}-bod-mythic-header">Mythic {{ group.bod.mythic }}/9</td>
+      {% for n in range(9) -%}
+      <td><img src="../resources/bod/chiclet-mythic.png" height="32" width="33"{% if group.bod.mythic < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
+    </tr>
+    <tr>
+      <td class="bodheaderchiclet bodheroicheader" ttid="{{ group.name | normalize }}-bod-heroic-header">Heroic {{ group.bod.heroic }}/9</td>
+      {% for n in range(9) -%}
+      <td><img src="../resources/bod/chiclet-heroic.png" height="32" width="33"{% if group.bod.heroic < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
+    </tr>
+    <tr>
+      <td class="bodheaderchiclet bodnormalheader" ttid="{{ group.name | normalize }}-bod-normal-header">Normal {{ group.bod.normal }}/9</td>
+      {% for n in range(9) -%}
+      <td><img src="../resources/bod/chiclet-normal.png" height="32" width="33"{% if group.bod.normal < n+1 %} style="opacity:0.25"{% endif %}/></td>
+      {% endfor -%}
+    </tr>
+  </tbody>
+</table>

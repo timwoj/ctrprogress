@@ -12,13 +12,13 @@ from google.appengine.ext import ndb
 
 class Constants:
 
-    uldirname = 'Uldir'
-    uldirbosses = ["Taloc", "MOTHER", "Fetid Devourer", "Zek'voz, Herald of N'zoth", "Vectis", "Zul, Reborn", "Mythrax the Unraveler", "G'huun"]
+    bodname = "Battle of Dazar'alor"
+    bodbosses = ["Champion of the Light", "Jadefire Masters", "Grong, the Revenant", "Opulence", "Conclave of the Chosen", "King Rastakhan", "High Tinker Mekkatorque", "Stormwall Blockade", "Lady Jaina Proudmoore"]
 
     difficulties = ['normal','heroic','mythic']
 
-    raidnames = [uldirname]
-    raids = [('uldir',uldirname, uldirbosses)]
+    raidnames = [bodname]
+    raids = [('bod',bodname, bodbosses)]
 
 # Model for a single boss in a raid instance.  Keeps track of whether a boss has been
 # killed for each of the difficulties.  There will be multiple of these in each Raid
@@ -48,7 +48,7 @@ class Group(ndb.Model):
     # TODO: i'd rather this be a list of raids so it's a bit more easy to extend
     # but it makes the queries harder and makes the data stored in the database
     # more opaque
-    uldir = ndb.StructuredProperty(Raid, required = True)
+    bod = ndb.StructuredProperty(Raid, required = True)
     lastupdated = ndb.DateTimeProperty()
     rosterupdated = ndb.DateProperty()
     avgilvl = ndb.IntegerProperty(default = 0)
@@ -57,7 +57,7 @@ class Group(ndb.Model):
     # and text displays.
     @classmethod
     def query_for_singletier_display(self):
-        q = self.query().order(-Group.uldir.mythic, -Group.uldir.heroic, -Group.uldir.normal).order(Group.name)
+        q = self.query().order(-Group.bod.mythic, -Group.bod.heroic, -Group.bod.normal).order(Group.name)
         results = q.fetch()
         return results
 
@@ -83,74 +83,24 @@ class RaidHistory(ndb.Model):
 class History(ndb.Model):
     group = ndb.StringProperty(required = True)
     date = ndb.DateProperty(required = True)
-    uldir = ndb.StructuredProperty(RaidHistory, required = True)
+    bod = ndb.StructuredProperty(RaidHistory, required = True)
     tweeted = ndb.BooleanProperty(default = False, required = True)
 
-class MigrateT21toT22(webapp2.RequestHandler):
+class MigrateT22toT23(webapp2.RequestHandler):
     def get(self):
         q = Group.query()
         groups = q.fetch()
 
         for group in groups:
-            if 'antorus' in group._properties:
-                del group._properties['antorus']
+            if 'uldir' in group._properties:
+                del group._properties['uldir']
 
-            group.uldir = Raid()
-            group.uldir.raidname = Constants.uldirname
-            group.uldir.bosses = list()
-            for boss in Constants.uldirbosses:
+            group.bod = Raid()
+            group.bod.raidname = Constants.bodname
+            group.bod.bosses = list()
+            for boss in Constants.bodbosses:
                 newboss = Boss(name = boss)
-                group.uldir.bosses.append(newboss)
+                group.bod.bosses.append(newboss)
 
             logging.info(group)
             group.put()
-
-class MigrateT19toT20(webapp2.RequestHandler):
-    def get(self):
-        q = Group.query()
-        groups = q.fetch()
-
-        for group in groups:
-            if 'en' in group._properties:
-                del group._properties['en']
-            if 'nh' in group._properties:
-                del group._properties['nh']
-            if 'tov' in group._properties:
-                del group._properties['tov']
-
-            group.tomb = Raid()
-            group.tomb.raidname = Constants.tombname
-            group.tomb.bosses = list()
-            for boss in Constants.tombbosses:
-                newboss = Boss(name = boss)
-                group.tomb.bosses.append(newboss)
-
-            logging.info(group)
-            group.put()
-
-class MigrateAddToV(webapp2.RequestHandler):
-    def get(self):
-        q = Group.query()
-        groups = q.fetch()
-
-        for group in groups:
-            group.tov = Raid()
-            group.tov.raidname = Constants.tovname
-            group.tov.bosses = list()
-            for boss in Constants.tovbosses:
-                logging.info(boss)
-                newboss = Boss(name = boss)
-                group.tov.bosses.append(newboss)
-
-            logging.info(group)
-
-            group.put()
-
-        q = History.query()
-        histories = q.fetch()
-        for hist in histories:
-            hist.tov = RaidHistory()
-            hist.tov.mythic = list()
-            hist.tov.heroic = list()
-            hist.tov.normal = list()
-            hist.put()
