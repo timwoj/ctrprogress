@@ -179,15 +179,22 @@ class ProgressBuilder(webapp2.RequestHandler):
             for boss in bosses:
 
                 # this filters the raid data down to just a single boss
-                b = [d for d in raid['bosses'] if d['name'] == boss][0]
+                single_boss = None
+                filtered_bosses = [d for d in raid['bosses'] if d['name'] == boss]
+                if filtered_bosses:
+                    single_boss = filtered_bosses[0]
+
+                if not single_boss:
+                    logging.error('Failed to find boss %s in toon progression data' % boss)
+                    continue
 
                 # loop through each difficulty level and grab each timestamp.
                 # skip any timestamps of zero.  that means the toon never
                 # killed the boss.
                 for d in Constants.difficulties:
-                    if b[d+'Timestamp'] != 0:
-                        bossdata[boss][d]['times'].append(b[d+'Timestamp'])
-                        bossdata[boss][d]['timeset'].add(b[d+'Timestamp'])
+                    if single_boss[d+'Timestamp'] != 0:
+                        bossdata[boss][d]['times'].append(single_boss[d+'Timestamp'])
+                        bossdata[boss][d]['timeset'].add(single_boss[d+'Timestamp'])
 
         # loop back through the difficulties and bosses and build up the
         # progress data
