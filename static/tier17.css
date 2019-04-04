@@ -10,16 +10,16 @@
 }
 
 .brfnormalheader {
-    background-image:url('../resources/blackrock/header-normal.png');
+    background-image:url('../static/blackrock/header-normal.png');
 }
 
 .brfheroicheader {
-    background-image:url('../resources/blackrock/header-heroic.png');
+    background-image:url('../static/blackrock/header-heroic.png');
     color:white;
 }
 
 .brfmythicheader {
-    background-image:url('../resources/blackrock/header-mythic.png');
+    background-image:url('../static/blackrock/header-mythic.png');
 }
 
 .hmheaderchiclet {
@@ -34,25 +34,25 @@
 }
 
 .hmnormalheader {
-    background-image:url('../resources/highmaul/header-normal.png');
+    background-image:url('../static/highmaul/header-normal.png');
 }
 
 .hmheroicheader {
-    background-image:url('../resources/highmaul/header-heroic.png');
+    background-image:url('../static/highmaul/header-heroic.png');
 }
 
 .hmmythicheader {
-    background-image:url('../resources/highmaul/header-mythic.png');
+    background-image:url('../static/highmaul/header-mythic.png');
     color:white;
 }
 
 .brf-background {
     background-size:530px 180px;
-    background-image:url(../resources/blackrock/background.png);
+    background-image:url(../static/blackrock/background.png);
 }
 
 .hm-background {
     background-size:500px 180px;
-    background-image:url(../resources/highmaul/background.png);
+    background-image:url(../static/highmaul/background.png);
     background-color:rgba(0, 0, 0, 0.1);
 }

@@ -10,20 +10,20 @@
 }
 
 .hfcnormalheader {
-    background-image:url('../resources/hfc/header-normal.png');
+    background-image:url('../static/hfc/header-normal.png');
 }
 
 .hfcheroicheader {
-    background-image:url('../resources/hfc/header-heroic.png');
+    background-image:url('../static/hfc/header-heroic.png');
     color:white;
 }
 
 .hfcmythicheader {
-    background-image:url('../resources/hfc/header-mythic.png');
+    background-image:url('../static/hfc/header-mythic.png');
     color:white;
 }
 
 .hfc-background {
     background-size:650px 180px;
-    background-image:url(../resources/hfc/background.png);
+    background-image:url(../static/hfc/background.png);
 }

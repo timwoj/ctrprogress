@@ -1,6 +1,6 @@
 @font-face {
     font-family: quadrata;
-    src: url('../resources/FrizQuadrataStd.otf')
+    src: url('../static/FrizQuadrataStd.otf')
 }
 
 .group-header-name {

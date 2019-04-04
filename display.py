@@ -10,11 +10,6 @@ import ctrpmodels
 def normalize(groupname):
     return groupname.lower().replace('\'','').replace(' ','-').replace('"','')
 
-JINJA_ENVIRONMENT = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
-    extensions=['jinja2.ext.autoescape'])
-JINJA_ENVIRONMENT.filters['normalize'] = normalize
-
 def display():
     last_updated = ctrpmodels.Global.get_last_updated()
     if last_updated is None:
@@ -111,7 +106,7 @@ def display_full_history():
         'title' : 'History'
     }
     response = render_template('header.html', **template_values)
-    
+
     # add the beginnings of the table
     response += '<table style="margin-left:50px;margin-right:50px">\n'
 
@@ -183,7 +178,7 @@ def display_group_history(group_name):
     else:
         response += '<div class="history-date">%s</div><p/>' % groupname
         response += '<table style="margin-left:50px;margin-right:50px">\n'
-        
+
         for u in entries:
             template_values = {
                 'history': u,
@@ -191,13 +186,15 @@ def display_group_history(group_name):
             }
             response += render_template('group-history.html', **template_values)
             response += '\n'
-            
+
         response += '</table>\n'
 
     response += render_template('footer.html')
     return response, 200
 
 def display_tier(tier):
+
+    tier_number = tier[-2:]
     template_values = {
         'title' : 'Tier %s' % tier_number,
         'tier': tier_number
@@ -206,3 +203,4 @@ def display_tier(tier):
     response = render_template('header.html', **template_values)
     response += render_template('%s.html' % tier)
     response += render_template('footer.html')
+    return response, 200

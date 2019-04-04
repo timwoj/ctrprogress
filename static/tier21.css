@@ -10,20 +10,20 @@
 }
 
 .antorusnormalheader {
-    background-image:url('../resources/antorus/header-normal.png');
+    background-image:url('../static/antorus/header-normal.png');
 }
 
 .antorusheroicheader {
-    background-image:url('../resources/antorus/header-heroic.png');
+    background-image:url('../static/antorus/header-heroic.png');
     color:white;
 }
 
 .antorusmythicheader {
-    background-image:url('../resources/antorus/header-mythic.png');
+    background-image:url('../static/antorus/header-mythic.png');
     color:white;
 }
 
 .antorus-background {
     background-size:650px 180px;
-    background-image:url(../resources/antorus/background.png);
+    background-image:url(../static/antorus/background.png);
 }

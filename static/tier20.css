@@ -10,20 +10,20 @@
 }
 
 .tombnormalheader {
-    background-image:url('../resources/tomb/header-normal.png');
+    background-image:url('../static/tomb/header-normal.png');
 }
 
 .tombheroicheader {
-    background-image:url('../resources/tomb/header-heroic.png');
+    background-image:url('../static/tomb/header-heroic.png');
     color:white;
 }
 
 .tombmythicheader {
-    background-image:url('../resources/tomb/header-mythic.png');
+    background-image:url('../static/tomb/header-mythic.png');
     color:white;
 }
 
 .tomb-background {
     background-size:650px 180px;
-    background-image:url(../resources/tomb/background.png);
+    background-image:url(../static/tomb/background.png);
 }

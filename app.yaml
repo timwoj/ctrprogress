@@ -1,5 +1,3 @@
-application: ctraidprogress
-version: 1
 runtime: python27
 api_version: 1
 threadsafe: yes
@@ -14,19 +12,19 @@ handlers:
   static_files: favicon.ico
   upload: favicon\.ico
 
-- url: /resources/FrizQuadrataStd.otf
-  static_files: resources/FrizQuadrataStd.otf
-  upload: resources/FrizQuadrataStd.otf
+- url: /static/FrizQuadrataStd.otf
+  static_files: static/FrizQuadrataStd.otf
+  upload: static/FrizQuadrataStd.otf
   mime_type: application/x-font-otf
   expiration: 100d
 
-- url: /resources/(.*\.png)$
-  static_files: resources/\1
-  upload: resources/.*\.png$
+- url: /static/(.*\.png)$
+  static_files: static/\1
+  upload: static/.*\.png$
   expiration: 100d
 
-- url: /resources
-  static_dir: resources
+- url: /static
+  static_dir: static
 
 - url: /howitworks\.html
   static_files: templates/howitworks.html
@@ -60,12 +58,6 @@ handlers:
   script: main.app
 
 libraries:
-- name: webapp2
-  version: "2.5.2"
-- name: lxml
-  version: "latest"
-- name: jinja2
-  version: latest
 - name: pycrypto
   version: latest
 - name: ssl

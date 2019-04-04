@@ -2,8 +2,6 @@
 #!/usr/bin/env python
 
 # External imports
-import webapp2
-import jinja2
 import os
 import datetime
 import json
@@ -11,8 +9,9 @@ import time
 import logging
 import twitter
 
+from flask import render_template, redirect
+
 # Imports from google
-from google.appengine.ext import ndb
 from google.appengine.api import taskqueue
 from google.appengine.api.taskqueue import Queue
 from google.appengine.api.taskqueue import Task

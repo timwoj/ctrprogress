@@ -4,15 +4,15 @@
   <head>
     <title>CTR Progress | {{ title }}</title>
     <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
-    <link rel="stylesheet" type="text/css" href="/resources/ctrranks.css"/>
-    {% if tier %}<link rel="stylesheet" type="text/css" href="/resources/tier{{ tier }}.css"/>{% endif %}
+    <link rel="stylesheet" type="text/css" href="/static/ctrranks.css"/>
+    {% if tier %}<link rel="stylesheet" type="text/css" href="/static/tier{{ tier }}.css"/>{% endif %}
     <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
     <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
     <script src="/tooltips.js"></script>
   </head>
   <body style="background-color:#d3d3d3">
     <div align=center>
-      <a href="/"><img src="/resources/header.png" height="120" width="425"></a>
+      <a href="/"><img src="/static/header.png" height="120" width="425"></a>
       <div style="font-size:14px;text-align:center">
         {% if last_updated is defined %}Last Updated: {{ last_updated.strftime('%F %I:%M:%S %p UTC') }}<br/>{% endif %}
         <a href="/howitworks.html">How It Works</a> | <a href="/history">History</a><br>

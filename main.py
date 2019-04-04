@@ -18,9 +18,10 @@ class RegexConverter(BaseConverter):
         self.regex = items[0]
 
 app.url_map.converters['regex'] = RegexConverter
+app.jinja_env.filters['normalize'] = display.normalize
 
 @app.route('/')
-def root:
+def root():
     return display.display()
 
 @app.route('/history')
@@ -33,11 +34,13 @@ def load_groups():
 
 @app.route('/rank', methods=['GET', 'POST'])
 def rank():
-    return ranker.rank()
+    if request.method == 'GET':
+        return ranker.rank()
+    return ranker.start_ranking()
 
 @app.route('/builder', methods=['POST'])
 def builder():
-    return ranker.run_builder()
+    return ranker.run_builder(request)
 
 @app.route('/migrate')
 def migrate():

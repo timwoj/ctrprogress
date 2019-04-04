@@ -10,21 +10,21 @@
 }
 
 .bodnormalheader {
-    background-image:url('../resources/bod/header-normal.png');
+    background-image:url('../static/bod/header-normal.png');
 }
 
 .bodheroicheader {
-    background-image:url('../resources/bod/header-heroic.png');
+    background-image:url('../static/bod/header-heroic.png');
 }
 
 .bodmythicheader {
-    background-image:url('../resources/bod/header-mythic.png');
+    background-image:url('../static/bod/header-mythic.png');
     color: white;
 }
 
 .bod-background {
     background-size:530px 180px;
-    background-image:url(../resources/bod/background.png);
+    background-image:url(../static/bod/background.png);
 }
 
 .cosheaderchiclet {
@@ -39,20 +39,20 @@
 }
 
 .cosnormalheader {
-    background-image:url('../resources/crucible/header-normal.png');
+    background-image:url('../static/crucible/header-normal.png');
 }
 
 .cosheroicheader {
-    background-image:url('../resources/crucible/header-heroic.png');
+    background-image:url('../static/crucible/header-heroic.png');
 }
 
 .cosmythicheader {
-    background-image:url('../resources/crucible/header-mythic.png');
+    background-image:url('../static/crucible/header-mythic.png');
     color:white;
 }
 
 .cos-background {
     background-size:500px 180px;
-    background-image:url(../resources/crucible/background.png);
+    background-image:url(../static/crucible/background.png);
     background-color:rgba(0, 0, 0, 0.1);
 }

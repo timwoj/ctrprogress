@@ -10,20 +10,20 @@
 }
 
 .uldirnormalheader {
-    background-image:url('../resources/uldir/header-normal.png');
+    background-image:url('../static/uldir/header-normal.png');
 }
 
 .uldirheroicheader {
-    background-image:url('../resources/uldir/header-heroic.png');
+    background-image:url('../static/uldir/header-heroic.png');
     color:white;
 }
 
 .uldirmythicheader {
-    background-image:url('../resources/uldir/header-mythic.png');
+    background-image:url('../static/uldir/header-mythic.png');
     color:white;
 }
 
 .uldir-background {
     background-size:650px 180px;
-    background-image:url(../resources/uldir/background.png);
+    background-image:url(../static/uldir/background.png);
 }
