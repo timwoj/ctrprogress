@@ -57,3 +57,4 @@ target/
 *~
 oauth_private_key.pem
 api_auth.json
+venv
