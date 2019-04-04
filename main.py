@@ -1,35 +1,56 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python
-#
-# Copyright 2007 Google Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-import webapp2
+
+from flask import Flask, request, Response
+from werkzeug.routing import BaseConverter
+
 import ctrpmodels
 import display
 import ranker
 import rostermgmt
 
-app = webapp2.WSGIApplication([
-    (r'/', display.Display),
-    (r'/history', display.DisplayHistory),
-    (r'/loadgroups', rostermgmt.RosterBuilder),
-    (r'/rank', ranker.Ranker),
-    (r'/builder', ranker.ProgressBuilder),
-    (r'/migrate', ctrpmodels.MigrateT22toT23),
-    (r'/tier(\d+)', display.DisplayTier),
-    webapp2.Route(r'/fixgroupnames', rostermgmt.RosterBuilder, handler_method='fix_groupnames'),
-    webapp2.Route(r'/tooltips.js', display.Display, handler_method='build_tooltips'),
-    webapp2.Route(r'/loadone', ranker.ProgressBuilder, handler_method='loadone'),
-    webapp2.Route(r'/startrank', ranker.Ranker, handler_method='post'),
-], debug=True)
+app = Flask(__name__)
+app.debug = True
+
+class RegexConverter(BaseConverter):
+    def __init__(self, url_map, *items):
+        super(RegexConverter, self).__init__(url_map)
+        self.regex = items[0]
+
+app.url_map.converters['regex'] = RegexConverter
+
+@app.route('/')
+def root:
+    return display.display()
+
+@app.route('/history')
+def history():
+    return display.display_history(request)
+
+@app.route('/loadgroups')
+def load_groups():
+    return rostermgmt.load_groups()
+
+@app.route('/rank', methods=['GET', 'POST'])
+def rank():
+    return ranker.rank()
+
+@app.route('/builder', methods=['POST'])
+def builder():
+    return ranker.run_builder()
+
+@app.route('/migrate')
+def migrate():
+    return ctrpmodels.migrate()
+
+@app.route('/<regex("tier(\d+)"):tier>')
+def display_tier(tier):
+    return display.display_tier(tier)
+
+@app.route('/tooltips.js')
+def tooltips():
+    return Response(display.build_tooltips(), content_type='application/javascript')
+
+@app.route('/loadone')
+def load_one():
+    return ranker.loadone(request)

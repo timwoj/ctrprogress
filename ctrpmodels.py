@@ -5,7 +5,6 @@
 # This file contains the models for the NDB entries that CTRP uses to store data in
 # app engine.  They're here to keep the definitions out of the ranker code.
 
-import webapp2
 import datetime
 import logging
 from google.appengine.ext import ndb
@@ -116,21 +115,18 @@ class History(ndb.Model):
                                     cls.tweeted == False)).order(cls.group)
         return results
 
-class MigrateT22toT23(webapp2.RequestHandler):
-    def get(self):
-        q = Group.query()
-        groups = q.fetch()
+def migrate():
+    groups = Group.query().fetch()
+    for group in groups:
+        if 'uldir' in group._properties:
+            del group._properties['uldir']
 
-        for group in groups:
-            if 'uldir' in group._properties:
-                del group._properties['uldir']
+        group.bod = Raid()
+        group.bod.raidname = Constants.bodname
+        group.bod.bosses = list()
+        for boss in Constants.bodbosses:
+            newboss = Boss(name=boss)
+            group.bod.bosses.append(newboss)
 
-            group.bod = Raid()
-            group.bod.raidname = Constants.bodname
-            group.bod.bosses = list()
-            for boss in Constants.bodbosses:
-                newboss = Boss(name = boss)
-                group.bod.bosses.append(newboss)
-
-            logging.info(group)
-            group.put()
+        logging.info(group)
+        group.put()
