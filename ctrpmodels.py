@@ -56,21 +56,35 @@ class Group(ndb.Model):
     # Query used in display.py to get a consistent set of data for both the graphical
     # and text displays.
     @classmethod
-    def query_for_singletier_display(self):
-        q = self.query().order(-Group.bod.mythic, -Group.bod.heroic, -Group.bod.normal).order(Group.name)
+    def query_for_singletier_display(cls):
+        q = cls.query().order(-Group.bod.mythic, -Group.bod.heroic, -Group.bod.normal).order(Group.name)
         results = q.fetch()
         return results
 
     # Query used in display.py to get a consistent set of data for both the graphical
     # and text displays.
     @classmethod
-    def query_for_splittier_display(self):
-        q = self.query().order(-Group.nh.mythic, -Group.nh.heroic, -Group.tov.mythic, -Group.en.mythic, -Group.nh.normal, -Group.tov.heroic, -Group.en.heroic, -Group.tov.normal, -Group.en.normal).order(Group.name)
+    def query_for_splittier_display(cls):
+        q = cls.query().order(-Group.nh.mythic, -Group.nh.heroic, -Group.tov.mythic, -Group.en.mythic, -Group.nh.normal, -Group.tov.heroic, -Group.en.heroic, -Group.tov.normal, -Group.en.normal).order(Group.name)
         results = q.fetch()
         return results
 
+    @classmethod
+    def get_group_by_name(cls, group_name):
+        results = cls.query(cls.name == group_name).fetch(1)
+        if results:
+            return results[0]
+        return None
+
 class Global(ndb.Model):
     lastupdated = ndb.DateTimeProperty(auto_now=True)
+
+    @classmethod
+    def get_last_updated(cls):
+        result = cls.query().fetch()
+        if result:
+            return result[0]
+        return None
 
 class RaidHistory(ndb.Model):
     mythic = ndb.StringProperty(repeated=True)
@@ -85,6 +99,22 @@ class History(ndb.Model):
     date = ndb.DateProperty(required = True)
     bod = ndb.StructuredProperty(RaidHistory, required = True)
     tweeted = ndb.BooleanProperty(default = False, required = True)
+
+    @classmethod
+    def get_for_date(cls, date):
+        results = cls.query(cls.date == date).order(cls.group).fetch()
+        return results
+
+    @classmethod
+    def get_for_group(cls, group_name):
+        results = cls.query(cls.group == group_name).order(-cls.date)
+        return results
+
+    @classmethod
+    def get_not_tweeted(cls, date):
+        results = cls.query(ndb.AND(cls.date == date,
+                                    cls.tweeted == False)).order(cls.group)
+        return results
 
 class MigrateT22toT23(webapp2.RequestHandler):
     def get(self):

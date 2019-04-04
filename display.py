@@ -14,11 +14,12 @@ JINJA_ENVIRONMENT.filters['normalize'] = normalize
 
 class Display(webapp2.RequestHandler):
     def get(self):
+        last_updated = ctrpmodels.Global.get_last_updated()
+        if last_updated is None:
+            last_updated = datetime.datetime.now()
 
-        q = ctrpmodels.Global.query()
-        r = q.fetch()
         template_values = {
-            'last_updated': datetime.datetime.now(),
+            'last_updated': last_updated,
             'title' : 'Main',
             'tier': 23
         }
@@ -105,14 +106,12 @@ class DisplayHistory(webapp2.RequestHandler):
             self.displayGroup(groupname)
 
     def displayFullHistory(self):
-        q = ctrpmodels.Global.query()
-        r = q.fetch()
-
-        lastupdated = r[0].lastupdated
-#        lastupdated = datetime.datetime.now()
+        last_updated = ctrpmodels.Global.get_last_updated()
+        if last_updated is None:
+            last_updated = datetime.datetime.now()
 
         template_values = {
-            'last_updated': lastupdated,
+            'last_updated': last_updated,
             'title' : 'History'
         }
         template = JINJA_ENVIRONMENT.get_template('templates/header.html')
@@ -132,9 +131,8 @@ class DisplayHistory(webapp2.RequestHandler):
             self.response.write('<tr><td colspan="2" class="history-date">'+str(curdate)+'</td></tr>\n')
 
             # Retrieve all of the entires for this date ordered by group name
-            q = ctrpmodels.History.query(ctrpmodels.History.date == curdate).order(ctrpmodels.History.group)
-            updates = q.fetch()
-            if (len(updates) == 0):
+            updates = ctrpmodels.History.get_for_date(curdate)
+            if not updates:
                 # if there were no results for this date, add just a simple
                 # entry displaying nothing
                 self.response.write('<tr>')
@@ -174,14 +172,12 @@ class DisplayHistory(webapp2.RequestHandler):
         self.response.write(template.render(template_values))
 
     def displayGroup(self, groupname):
-        q = ctrpmodels.Global.query()
-        r = q.fetch()
-
-        lastupdated = r[0].lastupdated
-#        lastupdated = datetime.datetime.now()
+        last_updated = ctrpmodels.Global.get_last_updated()
+        if last_updated is None:
+            last_updated = datetime.datetime.now()
 
         template_values = {
-            'last_updated': lastupdated,
+            'last_updated': last_updated,
             'title' : 'History'
         }
         template = JINJA_ENVIRONMENT.get_template('templates/header.html')
@@ -189,8 +185,7 @@ class DisplayHistory(webapp2.RequestHandler):
 
         # Record all history for this group that has been recorded sorted by the
         # date
-        q = ctrpmodels.History.query(ctrpmodels.History.group == groupname).order(-ctrpmodels.History.date)
-        entries = q.fetch()
+        entries = ctrpmodels.History.get_for_group(group_name)
 
         if (len(entries) == 0):
             self.response.write('No history recorded for group %s' % groupname)

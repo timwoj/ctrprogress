@@ -224,22 +224,19 @@ class ProgressBuilder(webapp2.RequestHandler):
         # update the last updated for the whole dataset.  don't actually
         # have to set the time here, the auto_now flag on the property does
         # it for us.
-        q = ctrpmodels.Global.query()
-        r = q.fetch()
-        if (len(r) == 0):
-            g = ctrpmodels.Global()
-        else:
-            g = r[0]
+        last_updated = ctrpmodels.Global.get_last_updated()
+        if last_updated:
+            g = last_updated
             g.put()
+        else:
+            g = ctrpmodels.Global()
 
         # post any changes that happened with the history to twitter
         curdate = datetime.date.today()
 
         # query for all of the history updates for today that haven't been
         # tweeted yet sorted by group name
-        q = ctrpmodels.History.query(ndb.AND(ctrpmodels.History.date == curdate,
-                                             ctrpmodels.History.tweeted == False)).order(ctrpmodels.History.group)
-        updates = q.fetch()
+        updates = ctrpmodels.History.get_not_tweeted(curdate)
         
         if len(updates) != 0:
             path = os.path.join(os.path.split(__file__)[0],'api-auth.json')
