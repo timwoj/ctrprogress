@@ -46,13 +46,13 @@ def load_groups():
         logging.error('urlfetch threw unknown exception')
 
     jsondata = json.loads(response.content)
-    
+
     groupcount = 0
     tooncount = 0
     responses = list()
-    
+
     t2 = time.time()
-    
+
     response = '<html><head><title>Roster Update</title></head><body>'
 
     # Grab the list of groups already in the database.  Loop through and
@@ -94,7 +94,7 @@ def load_groups():
             tz = updated_at['timezone'].replace('\\','')
             localtime = pytz.timezone(tz).localize(updatetime)
             lastupdate = localtime.astimezone(pytz.timezone('UTC')).date()
-            
+
             if res.rosterupdated != None and res.rosterupdated > lastupdate:
                 responses.append(('DateUnchanged', '%s hasn\'t been updated since last load (load: %s, update: %s)' % (res.name, res.rosterupdated, lastupdate)))
                 groupcount += 1
@@ -107,7 +107,7 @@ def load_groups():
 
     logging.info('time spent getting list of groups %s' % (t2-t1))
     logging.info('time spent cleaning groups %s' % (t3-t2))
-    
+
     # loop through the remaining groups in the json data and process them
     # in one pass.  we don't have to worry about hitting memory limits or
     # anything anymore since we're not making calls into the spreadsheet.
@@ -148,7 +148,7 @@ def load_groups():
 
     t6 = time.time()
     logging.info('time spent building groups %s' % (t6-t3))
-    
+
     response += '<br/>'
     response += 'Now managing %d groups with %d total toons<br/>' % (groupcount, tooncount)
     response += '</body></html>'
@@ -158,18 +158,18 @@ def load_groups():
 def worker(name, group):
     t4 = time.time()
     logging.info('working on group %s' % name)
-    
+
     # build up a list of toons for the group from the spreadsheet
     toons = list()
 
     for toon in group.get('toons', []):
-            
+
         # skip any toons that aren't marked active, since those toons
         # shouldn't be counted as part of the roster for ilvl
         # TODO: revisit this
         if toon['status'] != 'Active':
             continue
-            
+
         toons.append('%s/%s' % (toon['toon_name'], toon['realm']))
 
     toons = sorted(toons)
@@ -180,7 +180,7 @@ def worker(name, group):
     # have to.
     query = Group.query(Group.name == name)
     results = query.fetch(1)
-    
+
     response = ''
     loggroup = ''
     if (len(results) == 0):
@@ -198,7 +198,7 @@ def worker(name, group):
 
             newgroup.toons = toons
             newgroup.rosterupdated = datetime.date.today()
-            
+
             newgroup.put()
             response = 'Added group %s with %d toons' % (name,len(toons))
             loggroup = 'Added'
@@ -216,8 +216,8 @@ def worker(name, group):
         loggroup = 'Updated'
 
     t6 = time.time()
-    
+
     logging.info('time spent getting toons for %s: %s' % (name, (t5-t4)))
     logging.info('time spent updating db for %s: %s' % (name, (t6-t5)))
-    
+
     return (loggroup, len(toons), response)
