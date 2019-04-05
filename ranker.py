@@ -31,7 +31,7 @@ def run_builder(request):
         default_queue = Queue()
         stats = default_queue.fetch_statistics()
         while stats.tasks > 0:
-            logging.info("task check: waiting for %d tasks to finish" % stats.tasks)
+            logging.info("task check: waiting for %d tasks to finish", stats.tasks)
             time.sleep(5)
             stats = default_queue.fetch_statistics()
 
@@ -44,24 +44,24 @@ def run_builder(request):
 
         # sanity check, tho this shouldn't be possible
         if not group:
-            logging.info('Builder failed to find group %s' % groupname)
+            logging.info('Builder failed to find group %s', groupname)
             return '', 404
 
-        logging.info('Builder task for %s started' % groupname)
+        logging.info('Builder task for %s started', groupname)
         importer = wowapi.Importer()
         response = process_group(group, importer, True)
-        logging.info('Builder task for %s completed' % groupname)
+        logging.info('Builder task for %s completed', groupname)
 
     return response, 200
 
-def process_group(group, importer, writeDB):
-    logging.info('Starting work on group %s' % group.name)
+def process_group(group, importer, write_to_db):
+    logging.info('Starting work on group %s', group.name)
 
     data = list()
     importer.load(group.toons, data)
 
     progress = dict()
-    parse(Constants.bodbosses, data, Constants.bodname, progress, writeDB)
+    parse(Constants.bodbosses, data, Constants.bodname, progress)
 
     # calculate the avg ilvl values from the toon data
     group.avgilvl = 0
@@ -98,24 +98,24 @@ def process_group(group, importer, writeDB):
 
         for group_boss in group_raid.bosses:
             data_boss = [b for b in data_raid if b.name == group_boss.name][0]
-            if data_boss.normaldead != None and group_boss.normaldead == None:
+            if data_boss.normaldead is not None and group_boss.normaldead is None:
                 killedtoday['normal'].append(data_boss.name)
                 group_boss.normaldead = data_boss.normaldead
-                logging.debug('new normal kill of %s' % data_boss.name)
-            if data_boss.heroicdead != None and group_boss.heroicdead == None:
+                logging.debug('new normal kill of %s', data_boss.name)
+            if data_boss.heroicdead is not None and group_boss.heroicdead is None:
                 killedtoday['heroic'].append(data_boss.name)
                 group_boss.heroicdead = data_boss.heroicdead
-                logging.debug('new heroic kill of %s' % data_boss.name)
-            if data_boss.mythicdead != None and group_boss.mythicdead == None:
+                logging.debug('new heroic kill of %s', data_boss.name)
+            if data_boss.mythicdead is not None and group_boss.mythicdead is None:
                 killedtoday['mythic'].append(data_boss.name)
                 group_boss.mythicdead = data_boss.mythicdead
-                logging.debug('new mythic kill of %s' % data_boss.name)
+                logging.debug('new mythic kill of %s', data_boss.name)
 
-        for d in Constants.difficulties:
-            old = getattr(group_raid, d)
-            new = len([b for b in group_raid.bosses if getattr(b, d+'dead') != None])
+        for diff in Constants.difficulties:
+            old = getattr(group_raid, diff)
+            new = len([b for b in group_raid.bosses if getattr(b, diff+'dead') is not None])
             if old < new:
-                if (new_hist == None):
+                if new_hist is None:
                     new_hist = ctrpmodels.History(group=group.name)
                     new_hist.date = datetime.date.today()
                     new_hist.bod = ctrpmodels.RaidHistory()
@@ -125,35 +125,35 @@ def process_group(group, importer, writeDB):
 
                 raidhist = getattr(new_hist, raid[0])
 
-                raiddiff = getattr(raidhist, d)
-                raiddiff = killedtoday[d]
+                raiddiff = getattr(raidhist, diff)
+                raiddiff = killedtoday[diff]
 
                 # These aren't necessary unless a new object is created above
-                setattr(raidhist, d+'_total', new)
-                setattr(raidhist, d, raiddiff)
+                setattr(raidhist, diff+'_total', new)
+                setattr(raidhist, diff, raiddiff)
                 setattr(new_hist, raid[0], raidhist)
 
-                setattr(group_raid, d, new)
+                setattr(group_raid, diff, new)
 
-    if writeDB:
+    if write_to_db:
         group.put()
-        if new_hist != None:
+        if new_hist is not None:
             new_hist.put()
 
-    logging.info('Finished building group %s' % group.name)
+    logging.info('Finished building group %s', group.name)
     return '%s data generated<br/>' % group.name
 
-def parse(bosses, toondata, raidname, progress, writeDB):
+def parse(bosses, toondata, raidname, progress):
 
     progress[raidname] = list()
 
     bossdata = dict()
     for boss in bosses:
         bossdata[boss] = dict()
-        for d in Constants.difficulties:
-            bossdata[boss][d] = dict()
-            bossdata[boss][d]['times'] = list()
-            bossdata[boss][d]['timeset'] = set()
+        for diff in Constants.difficulties:
+            bossdata[boss][diff] = dict()
+            bossdata[boss][diff]['times'] = list()
+            bossdata[boss][diff]['timeset'] = set()
 
     # loop through each toon in the data from the blizzard API
     for toon in toondata:
@@ -179,45 +179,46 @@ def parse(bosses, toondata, raidname, progress, writeDB):
                 single_boss = filtered_bosses[0]
 
             if not single_boss:
-                logging.error('Failed to find boss %s in toon progression data' % boss)
+                logging.error('Failed to find boss %s in toon progression data', boss)
                 continue
 
             # loop through each difficulty level and grab each timestamp.
             # skip any timestamps of zero.  that means the toon never
             # killed the boss.
-            for d in Constants.difficulties:
-                if single_boss[d+'Timestamp'] != 0:
-                    bossdata[boss][d]['times'].append(single_boss[d+'Timestamp'])
-                    bossdata[boss][d]['timeset'].add(single_boss[d+'Timestamp'])
+            for diff in Constants.difficulties:
+                if single_boss[diff+'Timestamp'] != 0:
+                    bossdata[boss][diff]['times'].append(single_boss[diff+'Timestamp'])
+                    bossdata[boss][diff]['timeset'].add(single_boss[diff+'Timestamp'])
 
     # loop back through the difficulties and bosses and build up the
     # progress data
     for boss in bosses:
 
-        bossobj = ctrpmodels.Boss(name = boss)
+        bossobj = ctrpmodels.Boss(name=boss)
 
-        for d in Constants.difficulties:
+        for diff in Constants.difficulties:
             # for each boss, grab the set of unique timestamps and sort it
             # with the last kill first
-            timelist = list(bossdata[boss][d]['timeset'])
+            timelist = list(bossdata[boss][diff]['timeset'])
             timelist.sort(reverse=True)
-            logging.info("kill times for %s %s: %s" % (d, boss, str(timelist)))
+            logging.info("kill times for %s %s: %s", diff, boss, str(timelist))
 
-            for t in timelist:
-                count = bossdata[boss][d]['times'].count(t)
-                logging.info('%s: time: %d   count: %s' % (boss, t, count))
+            for stamp in timelist:
+                count = bossdata[boss][diff]['times'].count(stamp)
+                logging.info('%s: time: %d   count: %s', boss, stamp, count)
                 if count >= 8:
-                    logging.info('*** found valid kill for %s %s at %d' % (d, boss, t))
-                    setattr(bossobj, d+'dead', datetime.date.today())
+                    logging.info('*** found valid kill for %s %s at %d', diff, boss, stamp)
+                    setattr(bossobj, diff+'dead', datetime.date.today())
                     break
 
         progress[raidname].append(bossobj)
 
 def finish_building():
 
-    # update the last updated for the whole dataset.  don't actually
+    # update the last updated for the whole dataset. don't actually
     # have to set the time here, the auto_now flag on the property does
     # it for us.
+    # TODO: what does this do?
     last_updated = ctrpmodels.Global.get_last_updated()
     if last_updated:
         g = last_updated
@@ -233,7 +234,7 @@ def finish_building():
     updates = ctrpmodels.History.get_not_tweeted(curdate)
 
     if updates:
-        path = os.path.join(os.path.split(__file__)[0],'api-auth.json')
+        path = os.path.join(os.path.split(__file__)[0], 'api-auth.json')
         json_data = json.load(open(path))
 
         tw_client = twitter.Api(
@@ -243,40 +244,37 @@ def finish_building():
             access_token_secret=json_data['twitter_access_secret'],
             cache=None)
 
-        template = 'CtR group <%s> killed %d new boss(es) in %s %s to be %d/%d%s!'
         template_start = 'CtR group <%s> killed %d new boss'
         template_end = ' in %s %s to be %d/%d%s!'
-        for u in updates:
+        for update in updates:
 
             # mark this update as tweeted to avoid reposts
-            u.tweeted = True
+            update.tweeted = True
 
             for raid in Constants.raids:
 
-                raidhist=getattr(u, raid[0])
-                if raidhist != None:
-                    for d in reversed(Constants.difficulties):
-
-                        kills = getattr(raidhist, d)
-                        total = getattr(raidhist, d+'_total')
-                        if len(kills) != 0:
-                            text = template_start % (u.group, len(kills))
+                raidhist = getattr(update, raid[0])
+                if raidhist is not None:
+                    for diff in reversed(Constants.difficulties):
+                        kills = getattr(raidhist, diff)
+                        if kills:
+                            total = getattr(raidhist, diff+'_total')
+                            text = template_start % (update.group, len(kills))
                             if len(kills) > 1:
                                 text += "es"
-                            text+= template_end % (d.title(), raid[1], total,
-                                                   len(raid[2]), d.title()[0])
-                            if (d != 'normal') and total == len(raid[2]):
+                            text += template_end % (diff.title(), raid[1], total, len(raid[2]), diff.title()[0])
+                            if (diff != 'normal') and total == len(raid[2]):
                                 text = text + ' #aotc'
 
 #                            tw_client.PostUpdate(text)
 
             # update the entry in the database so that the tweeted flag
             # gets set to true
-            u.put()
+            update.put()
 
 def loadone(request):
     groupname = request.args.get('group', '')
-    logging.info('loading single %s' % groupname)
+    logging.info('loading single %s', groupname)
     group = Group.get_group_by_name(groupname)
     if group:
         importer = wowapi.Importer()
@@ -306,8 +304,8 @@ def start_ranking():
         # allows 10 URL requests at a time, which should hopefully keep the
         # Blizzard API queries under control.
         groups = Group.query().fetch()
-        for g in groups:
-            taskqueue.add(url='/builder', params={'group':g.name})
+        for group in groups:
+            taskqueue.add(url='/builder', params={'group':group.name})
 
         checker = Task(url='/builder', params={'group':'ctrp-taskcheck'})
         taskcheck = Queue(name='taskcheck')

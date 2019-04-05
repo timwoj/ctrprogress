@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
 
-from flask import render_template, redirect
-
-import os
 import datetime
+from flask import render_template, redirect
 import ctrpmodels
 
 def normalize(groupname):
-    return groupname.lower().replace('\'','').replace(' ','-').replace('"','')
+    return groupname.lower().replace('\'', '').replace(' ', '-').replace('"', '')
 
 def display():
     last_updated = ctrpmodels.Global.get_last_updated()
@@ -54,21 +52,21 @@ def build_tooltips():
             for boss in groupraid.bosses:
                 bosses.append((boss.name, boss.normaldead, boss.heroicdead, boss.mythicdead))
             index_dict = {item: index for index, item in enumerate(raidbosses)}
-            bosses.sort(key=lambda t:index_dict[t[0]])
+            bosses.sort(key=lambda t: index_dict[t[0]])
 
             for boss in bosses:
                 if boss[1] != None:
-                    normaltext += "<div class='bossdead'>"+boss[0]+"</div>";
+                    normaltext += "<div class='bossdead'>%s</div>" % boss[0]
                 else:
-                    normaltext += "<div class='bossalive'>"+boss[0]+"</div>";
+                    normaltext += "<div class='bossalive'>%s</div>" % boss[0]
                 if boss[2] != None:
-                    heroictext += "<div class='bossdead'>"+boss[0]+"</div>";
+                    heroictext += "<div class='bossdead'>%s</div>" % boss[0]
                 else:
-                    heroictext += "<div class='bossalive'>"+boss[0]+"</div>";
+                    heroictext += "<div class='bossalive'>%s</div>" % boss[0]
                 if boss[3] != None:
-                    mythictext += "<div class='bossdead'>"+boss[0]+"</div>";
+                    mythictext += "<div class='bossdead'>%s</div>" % boss[0]
                 else:
-                    mythictext += "<div class='bossalive'>"+boss[0]+"</div>";
+                    mythictext += "<div class='bossalive'>%s</div>" % boss[0]
 
             template_values = {
                 'name': group.name,
@@ -93,8 +91,8 @@ def display_history(request):
     group = request.form.get('group', '')
     if group:
         return display_group_history(group)
-    else:
-        return display_full_history()
+
+    return display_full_history()
 
 def display_full_history():
     last_updated = ctrpmodels.Global.get_last_updated()
@@ -114,10 +112,7 @@ def display_full_history():
     curdate = datetime.date.today()
     oneday = datetime.timedelta(1)
 
-    # this is a time object at 2AM AZ time (or 9AM UTC)
-    az2am = datetime.time(9)
-
-    for i in xrange(0,13):
+    for i in xrange(0, 13):
         response += '<tr><td colspan="2" class="history-date">%s</td></tr>\n' % curdate
 
         # Retrieve all of the entires for this date ordered by group name
@@ -127,9 +122,9 @@ def display_full_history():
             # entry displaying nothing
             response += '<tr>'
             response += '<td colspan="2" style="text-align:center">'
-            if (i == 0):
+            if i == 0:
                 current = datetime.datetime.now()
-                if (current > lastupdated):
+                if current > last_updated:
                     response += 'Data not parsed for today yet'
                 else:
                     response += 'No new kills for this date!'
@@ -142,10 +137,10 @@ def display_full_history():
 
             # now loop through the groups and output the updates in some
             # fashion
-            for u in updates:
+            for update in updates:
 
                 template_values = {
-                    'history': u,
+                    'history': update,
                     'num_bod_bosses': len(ctrpmodels.Constants.bodbosses)
                 }
                 response += render_template('history.html', **template_values)
@@ -173,15 +168,15 @@ def display_group_history(group_name):
     # date
     entries = ctrpmodels.History.get_for_group(group_name)
 
-    if (len(entries) == 0):
-        response += 'No history recorded for group %s' % groupname
+    if not entries:
+        response += 'No history recorded for group %s' % group_name
     else:
-        response += '<div class="history-date">%s</div><p/>' % groupname
-        response += '<table style="margin-left:50px;margin-right:50px">\n'
+        response += '<div class="history-date">%s</div><p/>' % group_name
+        response += '<table style="margin-left:50px;11margin-right:50px">\n'
 
-        for u in entries:
+        for entry in entries:
             template_values = {
-                'history': u,
+                'history': entry,
                 'num_bod_bosses': len(ctrpmodels.Constants.bodbosses)
             }
             response += render_template('group-history.html', **template_values)

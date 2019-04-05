@@ -19,21 +19,21 @@ import datetime
 import time
 
 from pytz.gae import pytz
-
-# Force the deadline for urlfetch to be 10 seconds (Default is 5).  For some
-# reason, that first lookup for the spreadsheet takes a bit.
 from google.appengine.api import urlfetch_errors
 from google.appengine.api import urlfetch
-urlfetch.set_default_fetch_deadline(20);
 
 from ctrpmodels import Boss
 from ctrpmodels import Constants
 from ctrpmodels import Group
 from ctrpmodels import Raid
 
+# Force the deadline for urlfetch to be 10 seconds (Default is 5).  For some
+# reason, that first lookup for the spreadsheet takes a bit.
+urlfetch.set_default_fetch_deadline(20)
+
 def load_groups():
 
-    t1 = time.time()
+    time1 = time.time()
     logging.info('retrieving roster data from Raid Builder')
     url = 'http://guild.converttoraid.com/api/teams'
     try:
@@ -51,7 +51,7 @@ def load_groups():
     tooncount = 0
     responses = list()
 
-    t2 = time.time()
+    time2 = time.time()
 
     response = '<html><head><title>Roster Update</title></head><body>'
 
@@ -91,8 +91,8 @@ def load_groups():
             # in UTC time.
             updated_at = jsondata[res.name]['updated_at']
             updatetime = datetime.datetime.strptime(updated_at['date'], '%Y-%m-%d %H:%M:%S.%f')
-            tz = updated_at['timezone'].replace('\\','')
-            localtime = pytz.timezone(tz).localize(updatetime)
+            timezone = updated_at['timezone'].replace('\\', '')
+            localtime = pytz.timezone(timezone).localize(updatetime)
             lastupdate = localtime.astimezone(pytz.timezone('UTC')).date()
 
             if res.rosterupdated != None and res.rosterupdated > lastupdate:
@@ -101,12 +101,12 @@ def load_groups():
                 tooncount += len(res.toons)
                 del jsondata[res.name]
 
-    logging.info('num groups to process: %d' % len(jsondata))
+    logging.info('num groups to process: %d', len(jsondata))
 
-    t3 = time.time()
+    time3 = time.time()
 
-    logging.info('time spent getting list of groups %s' % (t2-t1))
-    logging.info('time spent cleaning groups %s' % (t3-t2))
+    logging.info('time spent getting list of groups %s', (time2-time1))
+    logging.info('time spent cleaning groups %s', (time3-time2))
 
     # loop through the remaining groups in the json data and process them
     # in one pass.  we don't have to worry about hitting memory limits or
@@ -146,8 +146,8 @@ def load_groups():
     for i in updatedate:
         response += '%s<br/>' % i[1]
 
-    t6 = time.time()
-    logging.info('time spent building groups %s' % (t6-t3))
+    time6 = time.time()
+    logging.info('time spent building groups %s', (time6-time3))
 
     response += '<br/>'
     response += 'Now managing %d groups with %d total toons<br/>' % (groupcount, tooncount)
@@ -156,8 +156,8 @@ def load_groups():
     return response, 200
 
 def worker(name, group):
-    t4 = time.time()
-    logging.info('working on group %s' % name)
+    time4 = time.time()
+    logging.info('working on group %s', name)
 
     # build up a list of toons for the group from the spreadsheet
     toons = list()
@@ -166,14 +166,14 @@ def worker(name, group):
 
         # skip any toons that aren't marked active, since those toons
         # shouldn't be counted as part of the roster for ilvl
-        # TODO: revisit this
+        # TODO: revisit this, could this be done as part of the for above?
         if toon['status'] != 'Active':
             continue
 
         toons.append('%s/%s' % (toon['toon_name'], toon['realm']))
 
     toons = sorted(toons)
-    t5 = time.time()
+    time5 = time.time()
 
     # Check if this group already exists in the datastore.  We don't
     # want to overwrite existing progress data for a group if we don't
@@ -183,24 +183,24 @@ def worker(name, group):
 
     response = ''
     loggroup = ''
-    if (len(results) == 0):
+    if not results:
         # create a new group, but only if it has at least 5 toons in
         # it.  that's the threshold for building progress data and
         # there's no real reason to create groups with only that many
         # toons.
-        if (len(toons) >= 5):
+        if len(toons) >= 5:
             newgroup = Group(name=name)
             newgroup.bod = Raid()
             newgroup.bod.bosses = list()
             for boss in Constants.bodbosses:
-                newboss = Boss(name = boss)
+                newboss = Boss(name=boss)
                 newgroup.bod.bosses.append(newboss)
 
             newgroup.toons = toons
             newgroup.rosterupdated = datetime.date.today()
 
             newgroup.put()
-            response = 'Added group %s with %d toons' % (name,len(toons))
+            response = 'Added group %s with %d toons' % (name, len(toons))
             loggroup = 'Added'
         else:
             response = 'New group %s only has %d toons and was not included' % (name, len(toons))
@@ -212,12 +212,12 @@ def worker(name, group):
         existing.toons = toons
         existing.rosterupdated = datetime.date.today()
         existing.put()
-        response = 'Updated group %s with %d toons' % (name,len(toons))
+        response = 'Updated group %s with %d toons' % (name, len(toons))
         loggroup = 'Updated'
 
-    t6 = time.time()
+    time6 = time.time()
 
-    logging.info('time spent getting toons for %s: %s' % (name, (t5-t4)))
-    logging.info('time spent updating db for %s: %s' % (name, (t6-t5)))
+    logging.info('time spent getting toons for %s: %s', name, (time5-time4))
+    logging.info('time spent updating db for %s: %s', name, (time6-time5))
 
     return (loggroup, len(toons), response)

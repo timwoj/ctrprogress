@@ -5,28 +5,27 @@
 # This file contains the models for the NDB entries that CTRP uses to store data in
 # app engine.  They're here to keep the definitions out of the ranker code.
 
-import datetime
 import logging
 from google.appengine.ext import ndb
 
-class Constants:
+class Constants(object):
 
     bodname = "Battle of Dazar'alor"
     bodbosses = ["Champion of the Light", "Jadefire Masters", "Grong, the Revenant", "Opulence", "Conclave of the Chosen", "King Rastakhan", "High Tinker Mekkatorque", "Stormwall Blockade", "Lady Jaina Proudmoore"]
 
-    difficulties = ['normal','heroic','mythic']
+    difficulties = ['normal', 'heroic', 'mythic']
 
     raidnames = [bodname]
-    raids = [('bod',bodname, bodbosses)]
+    raids = [('bod', bodname, bodbosses)]
 
 # Model for a single boss in a raid instance.  Keeps track of whether a boss has been
 # killed for each of the difficulties.  There will be multiple of these in each Raid
 # model below.
 class Boss(ndb.Model):
-    name = ndb.StringProperty(required = True, indexed = True)
-    normaldead = ndb.DateProperty(required = True, default = None)
-    heroicdead = ndb.DateProperty(required = True, default = None)
-    mythicdead = ndb.DateProperty(required = True, default = None)
+    name = ndb.StringProperty(required=True, indexed=True)
+    normaldead = ndb.DateProperty(required=True, default=None)
+    heroicdead = ndb.DateProperty(required=True, default=None)
+    mythicdead = ndb.DateProperty(required=True, default=None)
 
 # Model of a raid instance.  This keeps track of the number of bosses killed by a raid
 # group for a single instance.  Contains a number of kills for each difficulty, built
@@ -35,37 +34,37 @@ class Boss(ndb.Model):
 class Raid(ndb.Model):
     # the next three values are the number of kills for each of difficulties, culled
     # from the boss data.
-    normal = ndb.IntegerProperty(required = True, default = 0)
-    heroic = ndb.IntegerProperty(required = True, default = 0)
-    mythic = ndb.IntegerProperty(required = True, default = 0)
-    bosses = ndb.StructuredProperty(Boss, repeated = True)
+    normal = ndb.IntegerProperty(required=True, default=0)
+    heroic = ndb.IntegerProperty(required=True, default=0)
+    mythic = ndb.IntegerProperty(required=True, default=0)
+    bosses = ndb.StructuredProperty(Boss, repeated=True)
 
 class Group(ndb.Model):
-    name = ndb.StringProperty(indexed=True, required = True)
+    name = ndb.StringProperty(indexed=True, required=True)
     toons = ndb.StringProperty(repeated=True)
 
     # TODO: i'd rather this be a list of raids so it's a bit more easy to extend
     # but it makes the queries harder and makes the data stored in the database
     # more opaque
-    bod = ndb.StructuredProperty(Raid, required = True)
+    bod = ndb.StructuredProperty(Raid, required=True)
     lastupdated = ndb.DateTimeProperty()
     rosterupdated = ndb.DateProperty()
-    avgilvl = ndb.IntegerProperty(default = 0)
+    avgilvl = ndb.IntegerProperty(default=0)
 
     # Query used in display.py to get a consistent set of data for both the graphical
     # and text displays.
     @classmethod
     def query_for_singletier_display(cls):
-        q = cls.query().order(-Group.bod.mythic, -Group.bod.heroic, -Group.bod.normal).order(Group.name)
-        results = q.fetch()
+        query = cls.query().order(-Group.bod.mythic, -Group.bod.heroic, -Group.bod.normal).order(Group.name)
+        results = query.fetch()
         return results
 
     # Query used in display.py to get a consistent set of data for both the graphical
     # and text displays.
     @classmethod
     def query_for_splittier_display(cls):
-        q = cls.query().order(-Group.nh.mythic, -Group.nh.heroic, -Group.tov.mythic, -Group.en.mythic, -Group.nh.normal, -Group.tov.heroic, -Group.en.heroic, -Group.tov.normal, -Group.en.normal).order(Group.name)
-        results = q.fetch()
+        query = cls.query().order(-Group.nh.mythic, -Group.nh.heroic, -Group.tov.mythic, -Group.en.mythic, -Group.nh.normal, -Group.tov.heroic, -Group.en.heroic, -Group.tov.normal, -Group.en.normal).order(Group.name)
+        results = query.fetch()
         return results
 
     @classmethod
@@ -89,15 +88,15 @@ class RaidHistory(ndb.Model):
     mythic = ndb.StringProperty(repeated=True)
     heroic = ndb.StringProperty(repeated=True)
     normal = ndb.StringProperty(repeated=True)
-    mythic_total = ndb.IntegerProperty(default = 0, required = True)
-    heroic_total = ndb.IntegerProperty(default = 0, required = True)
-    normal_total = ndb.IntegerProperty(default = 0, required = True)
+    mythic_total = ndb.IntegerProperty(default=0, required=True)
+    heroic_total = ndb.IntegerProperty(default=0, required=True)
+    normal_total = ndb.IntegerProperty(default=0, required=True)
 
 class History(ndb.Model):
-    group = ndb.StringProperty(required = True)
-    date = ndb.DateProperty(required = True)
-    bod = ndb.StructuredProperty(RaidHistory, required = True)
-    tweeted = ndb.BooleanProperty(default = False, required = True)
+    group = ndb.StringProperty(required=True)
+    date = ndb.DateProperty(required=True)
+    bod = ndb.StructuredProperty(RaidHistory, required=True)
+    tweeted = ndb.BooleanProperty(default=False, required=True)
 
     @classmethod
     def get_for_date(cls, date):
