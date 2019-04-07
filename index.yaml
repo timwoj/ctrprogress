@@ -33,5 +33,10 @@ indexes:
 - kind: History
   properties:
   - name: date
+  - name: group
+
+- kind: History
+  properties:
+  - name: date
   - name: tweeted
   - name: group
