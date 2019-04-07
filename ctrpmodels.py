@@ -81,7 +81,7 @@ class Global(ndb.Model):
     def get_last_updated(cls):
         result = cls.query().fetch()
         if result:
-            return result[0]
+            return result[0].lastupdated
         return None
 
 class RaidHistory(ndb.Model):
