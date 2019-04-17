@@ -38,6 +38,14 @@ def rank():
         return ranker.rank()
     return ranker.start_ranking()
 
+# This is used by the cron job to start ranking automatically. We call the ranker
+# but we don't care about the redirect that it responds with. Instead just return
+# a 200 so the cron job doesn't fail.
+@app.route('/startrank')
+def startrank():
+    ranker.start_ranking()
+    return '', 200
+
 @app.route('/builder', methods=['POST'])
 def builder():
     return ranker.run_builder(request)
