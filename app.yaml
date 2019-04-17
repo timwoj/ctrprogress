@@ -5,12 +5,11 @@ threadsafe: yes
 builtins:
 - remote_api: on
 
-default_expiration: "2d"
-
 handlers:
 - url: /favicon\.ico
   static_files: favicon.ico
   upload: favicon\.ico
+  expiration: 2d
 
 - url: /static/FrizQuadrataStd.otf
   static_files: static/FrizQuadrataStd.otf
@@ -25,6 +24,7 @@ handlers:
 
 - url: /static
   static_dir: static
+  expiration: 2d
 
 - url: /howitworks\.html
   static_files: templates/howitworks.html
@@ -43,14 +43,6 @@ handlers:
   login: admin
 
 - url: /loadgroups
-  script: main.app
-  login: admin
-
-- url: /fixgroupnames
-  script: main.app
-  login: admin
-
-- url: /mergedb
   script: main.app
   login: admin
 
