@@ -16,7 +16,7 @@ def display():
     template_values = {
         'last_updated': last_updated,
         'title' : 'Main',
-        'tier': 23
+        'tier': 24
     }
     response = render_template('header.html', **template_values)
     response += '<table>\n'
@@ -141,7 +141,7 @@ def display_full_history():
 
                 template_values = {
                     'history': update,
-                    'num_bod_bosses': len(ctrpmodels.Constants.bodbosses)
+                    'num_aep_bosses': len(ctrpmodels.Constants.aepbosses)
                 }
                 response += render_template('history.html', **template_values)
                 response += '\n'
@@ -177,7 +177,7 @@ def display_group_history(group_name):
         for entry in entries:
             template_values = {
                 'history': entry,
-                'num_bod_bosses': len(ctrpmodels.Constants.bodbosses)
+                'num_aep_bosses': len(ctrpmodels.Constants.aepbosses)
             }
             response += render_template('group-history.html', **template_values)
             response += '\n'

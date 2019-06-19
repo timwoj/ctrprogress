@@ -61,7 +61,7 @@ def process_group(group, importer, write_to_db):
     importer.load(group.toons, data)
 
     progress = dict()
-    parse(Constants.bodbosses, data, Constants.bodname, progress)
+    parse(Constants.aepbosses, data, Constants.aepname, progress)
 
     # calculate the avg ilvl values from the toon data
     group.avgilvl = 0
@@ -118,10 +118,10 @@ def process_group(group, importer, write_to_db):
                 if new_hist is None:
                     new_hist = ctrpmodels.History(group=group.name)
                     new_hist.date = datetime.date.today()
-                    new_hist.bod = ctrpmodels.RaidHistory()
-                    new_hist.bod.mythic = list()
-                    new_hist.bod.heroic = list()
-                    new_hist.bod.normal = list()
+                    new_hist.aep = ctrpmodels.RaidHistory()
+                    new_hist.aep.mythic = list()
+                    new_hist.aep.heroic = list()
+                    new_hist.aep.normal = list()
 
                 raidhist = getattr(new_hist, raid[0])
 

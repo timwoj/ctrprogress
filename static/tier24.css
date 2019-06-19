@@ -1,0 +1,29 @@
+.aepheaderchiclet {
+    text-align:center;
+    width:110px;
+    height:33px;
+    background-size:110px 33px;
+    background-repeat:no-repeat;
+    background-position:0px 1px;
+    font-family:quadrata;
+    font-size:14px;
+}
+
+.aepnormalheader {
+    background-image:url('../static/azshara/header-normal.png');
+}
+
+.aepheroicheader {
+    background-image:url('../static/azshara/header-heroic.png');
+    color: white;
+}
+
+.aepmythicheader {
+    background-image:url('../static/azshara/header-mythic.png');
+    color: white;
+}
+
+.aep-background {
+    background-size:530px 180px;
+    background-image:url(../static/azshara/background.png);
+}

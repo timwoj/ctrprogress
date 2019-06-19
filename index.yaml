@@ -12,6 +12,16 @@ indexes:
 
 - kind: Group
   properties:
+  - name: aep.mythic
+    direction: desc
+  - name: aep.heroic
+    direction: desc
+  - name: aep.normal
+    direction: desc
+  - name: name
+
+- kind: Group
+  properties:
   - name: bod.mythic
     direction: desc
   - name: bod.heroic

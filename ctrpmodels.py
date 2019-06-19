@@ -10,13 +10,13 @@ from google.appengine.ext import ndb
 
 class Constants(object):
 
-    bodname = "Battle of Dazar'alor"
-    bodbosses = ["Champion of the Light", "Jadefire Masters", "Grong, the Revenant", "Opulence", "Conclave of the Chosen", "King Rastakhan", "High Tinker Mekkatorque", "Stormwall Blockade", "Lady Jaina Proudmoore"]
+    aepname = "Azshara's Eternal Palace"
+    aepbosses = ["Abyssal Commander Sivara", "Radiance of Azshara", "Blackwater Behemoth", "Lady Ashvane", "Orgozoa", "The Queen's Court", "Za'qul, Harbinger of Ny'alotha", "Queen Azshara"]
 
     difficulties = ['normal', 'heroic', 'mythic']
 
-    raidnames = [bodname]
-    raids = [('bod', bodname, bodbosses)]
+    raidnames = [aepname]
+    raids = [('aep', aepname, aepbosses)]
 
 # Model for a single boss in a raid instance.  Keeps track of whether a boss has been
 # killed for each of the difficulties.  There will be multiple of these in each Raid
@@ -46,7 +46,7 @@ class Group(ndb.Model):
     # TODO: i'd rather this be a list of raids so it's a bit more easy to extend
     # but it makes the queries harder and makes the data stored in the database
     # more opaque
-    bod = ndb.StructuredProperty(Raid, required=True)
+    aep = ndb.StructuredProperty(Raid, required=True)
     lastupdated = ndb.DateTimeProperty()
     rosterupdated = ndb.DateProperty()
     avgilvl = ndb.IntegerProperty(default=0)
@@ -55,7 +55,7 @@ class Group(ndb.Model):
     # and text displays.
     @classmethod
     def query_for_singletier_display(cls):
-        query = cls.query().order(-Group.bod.mythic, -Group.bod.heroic, -Group.bod.normal).order(Group.name)
+        query = cls.query().order(-Group.aep.mythic, -Group.aep.heroic, -Group.aep.normal).order(Group.name)
         results = query.fetch()
         return results
 
@@ -96,7 +96,7 @@ class RaidHistory(ndb.Model):
 class History(ndb.Model):
     group = ndb.StringProperty(required=True)
     date = ndb.DateProperty(required=True)
-    bod = ndb.StructuredProperty(RaidHistory, required=True)
+    aep = ndb.StructuredProperty(RaidHistory, required=True)
     tweeted = ndb.BooleanProperty(default=False, required=True)
 
     @classmethod
@@ -118,15 +118,15 @@ class History(ndb.Model):
 def migrate():
     groups = Group.query().fetch()
     for group in groups:
-        if 'uldir' in group._properties:
-            del group._properties['uldir']
+        if 'bod' in group._properties:
+            del group._properties['bod']
 
-        group.bod = Raid()
-        group.bod.raidname = Constants.bodname
-        group.bod.bosses = list()
-        for boss in Constants.bodbosses:
+        group.aep = Raid()
+        group.aep.raidname = Constants.aepname
+        group.aep.bosses = list()
+        for boss in Constants.aepbosses:
             newboss = Boss(name=boss)
-            group.bod.bosses.append(newboss)
+            group.aep.bosses.append(newboss)
 
         logging.info(group)
         group.put()

@@ -190,11 +190,11 @@ def worker(name, group):
         # toons.
         if len(toons) >= 5:
             newgroup = Group(name=name)
-            newgroup.bod = Raid()
-            newgroup.bod.bosses = list()
-            for boss in Constants.bodbosses:
+            newgroup.aep = Raid()
+            newgroup.aep.bosses = list()
+            for boss in Constants.aepbosses:
                 newboss = Boss(name=boss)
-                newgroup.bod.bosses.append(newboss)
+                newgroup.aep.bosses.append(newboss)
 
             newgroup.toons = toons
             newgroup.rosterupdated = datetime.date.today()
