@@ -26,33 +26,3 @@
     background-size:530px 180px;
     background-image:url(../static/bod/background.png);
 }
-
-.cosheaderchiclet {
-    text-align:center;
-    width:90px;
-    height:33px;
-    background-size:90px 33px;
-    background-repeat:no-repeat;
-    background-position:0px 1px;
-    font-family:quadrata;
-    font-size:14px;
-}
-
-.cosnormalheader {
-    background-image:url('../static/crucible/header-normal.png');
-}
-
-.cosheroicheader {
-    background-image:url('../static/crucible/header-heroic.png');
-}
-
-.cosmythicheader {
-    background-image:url('../static/crucible/header-mythic.png');
-    color:white;
-}
-
-.cos-background {
-    background-size:500px 180px;
-    background-image:url(../static/crucible/background.png);
-    background-color:rgba(0, 0, 0, 0.1);
-}
