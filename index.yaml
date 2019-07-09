@@ -20,26 +20,6 @@ indexes:
     direction: desc
   - name: name
 
-- kind: Group
-  properties:
-  - name: bod.mythic
-    direction: desc
-  - name: bod.heroic
-    direction: desc
-  - name: bod.normal
-    direction: desc
-  - name: name
-
-- kind: Group
-  properties:
-  - name: uldir.mythic
-    direction: desc
-  - name: uldir.heroic
-    direction: desc
-  - name: uldir.normal
-    direction: desc
-  - name: name
-
 - kind: History
   properties:
   - name: date
