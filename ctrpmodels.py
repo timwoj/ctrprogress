@@ -10,7 +10,7 @@ from google.appengine.ext import ndb
 
 class Constants(object):
 
-    aepname = "Azshara's Eternal Palace"
+    aepname = "The Eternal Palace"
     aepbosses = ["Abyssal Commander Sivara", "Radiance of Azshara", "Blackwater Behemoth", "Lady Ashvane", "Orgozoa", "The Queen's Court", "Za'qul, Harbinger of Ny'alotha", "Queen Azshara"]
 
     difficulties = ['normal', 'heroic', 'mythic']

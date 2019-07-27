@@ -6,20 +6,20 @@
   </thead>
   <taepy>
     <tr>
-      <td class="aepheaderchiclet aepmythicheader" ttid="{{ group.name | normalize }}-aep-mythic-header">Mythic {{ group.aep.mythic }}/9</td>
-      {% for n in range(9) -%}
+      <td class="aepheaderchiclet aepmythicheader" ttid="{{ group.name | normalize }}-aep-mythic-header">Mythic {{ group.aep.mythic }}/8</td>
+      {% for n in range(8) -%}
       <td><img src="../static/azshara/chiclet-mythic.png" height="32" width="33"{% if group.aep.mythic < n+1 %} style="opacity:0.25"{% endif %}/></td>
       {% endfor -%}
     </tr>
     <tr>
-      <td class="aepheaderchiclet aepheroicheader" ttid="{{ group.name | normalize }}-aep-heroic-header">Heroic {{ group.aep.heroic }}/9</td>
-      {% for n in range(9) -%}
+      <td class="aepheaderchiclet aepheroicheader" ttid="{{ group.name | normalize }}-aep-heroic-header">Heroic {{ group.aep.heroic }}/8</td>
+      {% for n in range(8) -%}
       <td><img src="../static/azshara/chiclet-heroic.png" height="32" width="33"{% if group.aep.heroic < n+1 %} style="opacity:0.25"{% endif %}/></td>
       {% endfor -%}
     </tr>
     <tr>
-      <td class="aepheaderchiclet aepnormalheader" ttid="{{ group.name | normalize }}-aep-normal-header">Normal {{ group.aep.normal }}/9</td>
-      {% for n in range(9) -%}
+      <td class="aepheaderchiclet aepnormalheader" ttid="{{ group.name | normalize }}-aep-normal-header">Normal {{ group.aep.normal }}/8</td>
+      {% for n in range(8) -%}
       <td><img src="../static/azshara/chiclet-normal.png" height="32" width="33"{% if group.aep.normal < n+1 %} style="opacity:0.25"{% endif %}/></td>
       {% endfor -%}
     </tr>
