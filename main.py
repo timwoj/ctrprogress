@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
 
-from flask import Flask, request, Response
+from flask import Flask, request, Response, jsonify
 from werkzeug.routing import BaseConverter
 
 import ctrpmodels
@@ -65,3 +65,7 @@ def tooltips():
 @app.route('/loadone')
 def load_one():
     return ranker.loadone(request)
+
+@app.route('/api')
+def api():
+    return jsonify(ranker.api())

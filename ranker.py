@@ -312,3 +312,44 @@ def start_ranking():
         taskcheck.add(checker)
 
     return redirect('/rank')
+
+def api():
+    
+    last_updated = ctrpmodels.Global.get_last_updated()
+    if last_updated is None:
+        last_updated = datetime.datetime.now()
+
+    response = {
+        'last_updated': last_updated,
+        'groups': {}
+    }
+
+    groups = ctrpmodels.Group.query_for_singletier_display()
+    for group in groups:
+
+        response['groups'][group.name] = {}
+        for raidinfo in ctrpmodels.Constants.raids:
+
+            group_data = {}
+            raid = raidinfo[0]
+            bosses = []
+            groupraid = getattr(group, raid)
+            raidbosses = getattr(ctrpmodels.Constants, raid+'bosses')
+
+            # Build an array of tuples containing a boss name and all of the current progression,
+            # then sort that array based on the order in the raid bosses from the constants.
+            for boss in groupraid.bosses:
+                bosses.append((boss.name, boss.normaldead, boss.heroicdead, boss.mythicdead))
+            index_dict = {item: index for index, item in enumerate(raidbosses)}
+            bosses.sort(key=lambda t: index_dict[t[0]])
+
+            for boss in bosses:
+                group_data[boss[0]] = {
+                    'normal': boss[1] is not None,
+                    'heroic': boss[2] is not None,
+                    'mythic': boss[3] is not None
+                }
+
+            response['groups'][group.name][raid] = group_data
+
+    return response
