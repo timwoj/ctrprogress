@@ -215,17 +215,6 @@ def parse(bosses, toondata, raidname, progress):
 
 def finish_building():
 
-    # update the last updated for the whole dataset. don't actually
-    # have to set the time here, the auto_now flag on the property does
-    # it for us.
-    # TODO: what does this do?
-    last_updated = ctrpmodels.Global.get_last_updated()
-    if last_updated:
-        g = last_updated
-        g.put()
-    else:
-        g = ctrpmodels.Global()
-
     # post any changes that happened with the history to twitter
     curdate = datetime.date.today()
 
