@@ -38,7 +38,7 @@ def root():
 
 @app.route('/history')
 def history():
-    return display.display_history(dcl, request)
+    return display.display_history(dcl)
 
 @app.route('/loadgroups')
 def load_groups():

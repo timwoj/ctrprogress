@@ -103,15 +103,10 @@ def build_tooltips(dcl):
 
     return response
 
-def display_history(dcl, request):
-    group = request.form.get('group', '')
-    if group:
-        return display_group_history(group)
+def display_history(dcl):
 
-    return display_full_history()
-
-def display_full_history():
-    last_updated = ctrpmodels.Global.get_last_updated()
+    # TODO: do i bother to keep this?
+    last_updated = None
     if last_updated is None:
         last_updated = datetime.datetime.now()
 
@@ -167,40 +162,6 @@ def display_full_history():
     response += '</table>\n'
     response += render_template('footer.html')
 
-    return response, 200
-
-def display_group_history(group_name):
-    last_updated = ctrpmodels.Global.get_last_updated()
-    if last_updated is None:
-        last_updated = datetime.datetime.now()
-
-    template_values = {
-        'last_updated': last_updated,
-        'title' : 'History'
-    }
-    response = render_template('header.html', **template_values)
-
-    # Record all history for this group that has been recorded sorted by the
-    # date
-    entries = ctrpmodels.History.get_for_group(group_name)
-
-    if not entries:
-        response += 'No history recorded for group %s' % group_name
-    else:
-        response += '<div class="history-date">%s</div><p/>' % group_name
-        response += '<table style="margin-left:50px;11margin-right:50px">\n'
-
-        for entry in entries:
-            template_values = {
-                'history': entry,
-                'num_aep_bosses': len(ctrpmodels.Constants.aepbosses)
-            }
-            response += render_template('group-history.html', **template_values)
-            response += '\n'
-
-        response += '</table>\n'
-
-    response += render_template('footer.html')
     return response, 200
 
 def display_tier(tier):
