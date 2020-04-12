@@ -7,80 +7,88 @@ import datetime
 import json
 import time
 import logging
-import twitter
+import urllib.parse
 
 from flask import render_template, redirect
 
 # Imports from google
-from google.appengine.api import taskqueue
-from google.appengine.api.taskqueue import Queue
-from google.appengine.api.taskqueue import Task
+from google.cloud import tasks
+from google.cloud import datastore
 
 # Internal imports
 import wowapi
-from ctrpmodels import Constants
-from ctrpmodels import Group
 import ctrpmodels
+from ctrpmodels import Constants
+
+PROJECT_NAME='ctrptest'
+PROJECT_REGION='us-central1'
+
+task_client = tasks.CloudTasksClient()
+default_queue = task_client.queue_path(PROJECT_NAME, PROJECT_REGION, 'default')
+check_queue = task_client.queue_path(PROJECT_NAME, PROJECT_REGION, 'taskcheck')
+
+dcl = datastore.Client()
+importer = wowapi.Importer()
 
 def run_builder(request):
-    groupname = request.form.get('group')
+
+    groupname = request.args.get('group')
     if groupname == 'ctrp-taskcheck':
 
         # Grab the default queue and keep checking for whether or not
         # all of the tasks have finished.
-        default_queue = Queue()
-        stats = default_queue.fetch_statistics()
-        while stats.tasks > 0:
-            logging.info("task check: waiting for %d tasks to finish", stats.tasks)
-            time.sleep(5)
-            stats = default_queue.fetch_statistics()
+        tasks = task_client.list_tasks(default_queue)
 
-        finish_building()
+        # This is a hack because list_tasks returns an iterator, which we can't
+        # get a length from. This loops through the iterator and sums up how
+        # many elements are in it.
+        num_tasks = sum(1 for _ in tasks)
+        
+        while num_tasks > 0:
+            print("task check: waiting for {} tasks to finish".format(num_tasks))
+            time.sleep(5)
+            tasks = task_client.list_tasks(default_queue)
+            num_tasks = sum(1 for _ in tasks)
+
         response = ''
 
     else:
 
-        group = Group.get_group_by_name(groupname)
+        query = dcl.query(kind='Group', filters=[('normalized','=',groupname)])
+        
+        if query:
+            results = list(query.fetch(limit=1))
 
         # sanity check, tho this shouldn't be possible
-        if not group:
-            logging.info('Builder failed to find group %s', groupname)
+        if not results:
+            print('Builder failed to find group {}'.format(groupname))
             return '', 404
 
-        logging.info('Builder task for %s started', groupname)
-        importer = wowapi.Importer()
-        response = process_group(group, importer, True)
-        logging.info('Builder task for %s completed', groupname)
+        print('Builder task for {} started'.format(groupname))
+        response = process_group(results[0], True)
+        print('Builder task for {} completed'.format(groupname))
 
     return response, 200
 
-def process_group(group, importer, write_to_db):
-    logging.info('Starting work on group %s', group.name)
+def process_group(group, write_to_db):
 
-    data = list()
-    importer.load(group.toons, data)
-
-    progress = dict()
-    parse(Constants.aepbosses, data, Constants.aepname, progress)
+    data = importer.load(group.get('toons',[]))
+    progress = ctrpmodels.build_raid_arrays()
+    for raid in Constants.raids:
+        parse(raid.get('slug', ''), raid.get('bosses', []), data, progress)
 
     # calculate the avg ilvl values from the toon data
-    group.avgilvl = 0
+    avgilvl = 0
     numtoons = 0
     for toon in data:
-        # ignore toons that we didn't get data back for or for toons less than
-        # level 120
-        if 'items' in toon and toon['level'] == 120:
+        if toon.get('level', 0) == Constants.max_level and 'equipped_item_level' in toon:
             numtoons += 1
-            group.avgilvl += toon['items']['averageItemLevelEquipped']
+            avgilvl += toon.get('equipped_item_level', 0)
 
     if numtoons != 0:
-        group.avgilvl /= numtoons
+        avgilvl /= numtoons
 
-    # update the entry in ndb with the new progression data for this
-    # group.  this also checks to make sure that the progress only ever
-    # increases, in case of weirdness with the data.  also generate
-    # history data while we're at it.
-    new_hist = None
+    group.update({'avgilvl': (int(avgilvl) * 100) / 100.0})
 
     # Loop through the raids that are being processed for this tier and
     # build all of the points of data that are needed.  First, update which
@@ -88,64 +96,45 @@ def process_group(group, importer, write_to_db):
     # difficulties and build the killed counts and the history.
     for raid in Constants.raids:
 
-        group_raid = getattr(group, raid[0])
-        data_raid = progress[raid[1]]
+        group_raid = group.get('raids', {}).get(raid.get('slug',''), {})
+        data_raid = progress.get(raid.get('slug', ''), {})
 
-        killedtoday = dict()
-        killedtoday['normal'] = list()
-        killedtoday['heroic'] = list()
-        killedtoday['mythic'] = list()
-
-        for group_boss in group_raid.bosses:
-            data_boss = [b for b in data_raid if b.name == group_boss.name][0]
-            if data_boss.normaldead is not None and group_boss.normaldead is None:
-                killedtoday['normal'].append(data_boss.name)
-                group_boss.normaldead = data_boss.normaldead
-                logging.debug('new normal kill of %s', data_boss.name)
-            if data_boss.heroicdead is not None and group_boss.heroicdead is None:
-                killedtoday['heroic'].append(data_boss.name)
-                group_boss.heroicdead = data_boss.heroicdead
-                logging.debug('new heroic kill of %s', data_boss.name)
-            if data_boss.mythicdead is not None and group_boss.mythicdead is None:
-                killedtoday['mythic'].append(data_boss.name)
-                group_boss.mythicdead = data_boss.mythicdead
-                logging.debug('new mythic kill of %s', data_boss.name)
+        killedtoday = {}
+        found_new_kills = False
 
         for diff in Constants.difficulties:
-            old = getattr(group_raid, diff)
-            new = len([b for b in group_raid.bosses if getattr(b, diff+'dead') is not None])
-            if old < new:
-                if new_hist is None:
-                    new_hist = ctrpmodels.History(group=group.name)
-                    new_hist.date = datetime.date.today()
-                    new_hist.aep = ctrpmodels.RaidHistory()
-                    new_hist.aep.mythic = list()
-                    new_hist.aep.heroic = list()
-                    new_hist.aep.normal = list()
+            killedtoday[diff] = []
+            # TODO: remove this .lower() once the group data is fixed in the database
+            for idx, group_boss in enumerate(group_raid.get(diff.lower(), [])):
+                if not group_boss and data_raid.get(diff,[])[idx]:
+                    killedtoday[diff].append(raid.get('bosses',[])[idx])
+                    print('new {} kill of {}'.format(diff, raid.get('bosses',[])[idx]))
+                    found_new_kills = True
 
-                raidhist = getattr(new_hist, raid[0])
+        if found_new_kills and write_to_db:
+            new_hist = {
+                'group': group.get('group'),
+                'date': datetime.datetime.now(),
+                'kills': killedtoday
+            }
 
-                raiddiff = getattr(raidhist, diff)
-                raiddiff = killedtoday[diff]
+            key = dcl.Key('History')
+            entity = datastore.Entity(key=key)
+            entity.update(new_hist)
+            dcl.put(entity)
 
-                # These aren't necessary unless a new object is created above
-                setattr(raidhist, diff+'_total', new)
-                setattr(raidhist, diff, raiddiff)
-                setattr(new_hist, raid[0], raidhist)
-
-                setattr(group_raid, diff, new)
+            group.update({'has_kills': True})
+            
+        group.update({'sort_key': ctrpmodels.get_sort_key(group)})
 
     if write_to_db:
-        group.put()
-        if new_hist is not None:
-            new_hist.put()
+        group.update({'raids': progress})
+        dcl.put(group)
 
-    logging.info('Finished building group %s', group.name)
-    return '%s data generated<br/>' % group.name
+    print('Finished building group {}'.format(group.get('group')))
+    return '{} data generated<br/>'.format(group.get('group'))
 
-def parse(bosses, toondata, raidname, progress):
-
-    progress[raidname] = list()
+def parse(raidkey, bosses, toondata, progress):
 
     bossdata = dict()
     for boss in bosses:
@@ -158,146 +147,122 @@ def parse(bosses, toondata, raidname, progress):
     # loop through each toon in the data from the blizzard API
     for toon in toondata:
 
-        if 'progression' not in toon:
-            continue
+        print('Kill data for {}'.format(toon.get('name')))
+        # get just the raid data we're looking for in this pass for this one toon
+        raid = toon.get('progression',{}).get(raidkey, {})
 
-        # get just the raid data for this toon
-        raids = toon['progression']['raids']
+        # loop through the difficulties because that's the way that blizzard
+        # orders them, and it'll make it easier to process.
+        for diff in Constants.difficulties:
 
-        # this filters the raid data down to just the raid we're looking
-        # at this pass
-        raid = [d for d in raids if d['name'] == raidname][0]
+            encounters = [e for e in raid if e.get('difficulty',{}).get('name') == diff]
+            if encounters:
+                encounters = encounters[0].get('progress',{}).get('encounters',[])
+            
+                for boss in bosses:
 
-        # loop through the individual bosses and get the timestamp for
-        # the last kill for this toon for each boss
-        for boss in bosses:
+                    single_boss = [b for b in encounters if b.get('encounter',{}).get('name','') == boss]
+                    if not single_boss:
+                        print('{} {} was never killed'.format(diff, boss))
+                        continue
 
-            # this filters the raid data down to just a single boss
-            single_boss = None
-            filtered_bosses = [d for d in raid['bosses'] if d['name'] == boss]
-            if filtered_bosses:
-                single_boss = filtered_bosses[0]
-
-            if not single_boss:
-                logging.error('Failed to find boss %s in toon progression data', boss)
-                continue
-
-            # loop through each difficulty level and grab each timestamp.
-            # skip any timestamps of zero.  that means the toon never
-            # killed the boss.
-            for diff in Constants.difficulties:
-                if single_boss[diff+'Timestamp'] != 0:
-                    bossdata[boss][diff]['times'].append(single_boss[diff+'Timestamp'])
-                    bossdata[boss][diff]['timeset'].add(single_boss[diff+'Timestamp'])
+                    last_kill = round_time(single_boss[0].get('last_kill_timestamp', 0))
+                    bossdata[boss][diff]['times'].append(last_kill)
+                    bossdata[boss][diff]['timeset'].add(last_kill)
 
     # loop back through the difficulties and bosses and build up the
     # progress data
-    for boss in bosses:
+    for idx, boss in enumerate(bosses):
 
-        bossobj = ctrpmodels.Boss(name=boss)
-
+        if boss not in bossdata:
+            continue
+        
         for diff in Constants.difficulties:
             # for each boss, grab the set of unique timestamps and sort it
             # with the last kill first
             timelist = list(bossdata[boss][diff]['timeset'])
             timelist.sort(reverse=True)
-            logging.info("kill times for %s %s: %s", diff, boss, str(timelist))
+            print("kill times for {} {}: {}".format(diff, boss, str(timelist)))
 
             for stamp in timelist:
                 count = bossdata[boss][diff]['times'].count(stamp)
-                logging.info('%s: time: %d   count: %s', boss, stamp, count)
-                if count >= 8:
-                    logging.info('*** found valid kill for %s %s at %d', diff, boss, stamp)
-                    setattr(bossobj, diff+'dead', datetime.date.today())
+                print('{}: time: {}   count: {}'.format(boss, stamp, count))
+                if count >= 5:
+                    progress[raidkey][diff][idx] = stamp
                     break
-
-        progress[raidname].append(bossobj)
-
-def finish_building():
-
-    # post any changes that happened with the history to twitter
-    curdate = datetime.date.today()
-
-    # query for all of the history updates for today that haven't been
-    # tweeted yet sorted by group name
-    updates = ctrpmodels.History.get_not_tweeted(curdate)
-
-    if updates:
-        path = os.path.join(os.path.split(__file__)[0], 'api-auth.json')
-        json_data = json.load(open(path))
-
-        tw_client = twitter.Api(
-            consumer_key=json_data['twitter_consumer_key'],
-            consumer_secret=json_data['twitter_consumer_secret'],
-            access_token_key=json_data['twitter_access_token'],
-            access_token_secret=json_data['twitter_access_secret'],
-            cache=None)
-
-        template_start = 'CtR group <%s> killed %d new boss'
-        template_end = ' in %s %s to be %d/%d%s!'
-        for update in updates:
-
-            # mark this update as tweeted to avoid reposts
-            update.tweeted = True
-
-            for raid in Constants.raids:
-
-                raidhist = getattr(update, raid[0])
-                if raidhist is not None:
-                    for diff in reversed(Constants.difficulties):
-                        kills = getattr(raidhist, diff)
-                        if kills:
-                            total = getattr(raidhist, diff+'_total')
-                            text = template_start % (update.group, len(kills))
-                            if len(kills) > 1:
-                                text += "es"
-                            text += template_end % (diff.title(), raid[1], total, len(raid[2]), diff.title()[0])
-                            if (diff != 'normal') and total == len(raid[2]):
-                                text = text + ' #aotc'
-
-#                            tw_client.PostUpdate(text)
-
-            # update the entry in the database so that the tweeted flag
-            # gets set to true
-            update.put()
 
 def loadone(request):
     groupname = request.args.get('group', '')
-    logging.info('loading single %s', groupname)
-    group = Group.get_group_by_name(groupname)
-    if group:
-        importer = wowapi.Importer()
-        process_group(group, importer, False)
+    print('loading single {}'.format(groupname))
+    query = dcl.query(kind='Group', filters=[('group','=',groupname)])
 
-    return '', 200
+    if query:
+        results = list(query.fetch(limit=1))
+        if results:
+            return process_group(results[0], True), 200
+
+    return '', 404
 
 def rank():
-    queue = Queue()
-    stats = queue.fetch_statistics()
+    tasks = task_client.list_tasks(default_queue)
+    num_tasks = sum(1 for _ in tasks)
 
     template_values = {
-        'tasks': stats.tasks,
-        'in_flight': stats.in_flight,
+        'tasks': num_tasks
     }
 
     return render_template('ranker.html', **template_values)
 
 def start_ranking():
     # refuse to start the tasks if there are some already running
-    queue = Queue()
-    stats = queue.fetch_statistics()
-    if stats.tasks == 0:
+    tasks = task_client.list_tasks(default_queue)
+    num_tasks = sum(1 for _ in tasks)
+
+    epoch = datetime.datetime.now() - datetime.datetime.utcfromtimestamp(0)
+    epoch = int(epoch.total_seconds())
+    
+    if num_tasks == 0:
 
         # queue up all of the groups into individual tasks.  the configuration
         # in queue.yaml only allows 10 tasks to run at once.  the builder only
         # allows 10 URL requests at a time, which should hopefully keep the
         # Blizzard API queries under control.
-        groups = Group.query().fetch()
+        groups = dcl.query(kind='Group').fetch()
         for group in groups:
-            taskqueue.add(url='/builder', params={'group':group.name})
+            task = {
+                'name': task_client.task_path(PROJECT_NAME, PROJECT_REGION, 'default',
+                                              '{}-{}'.format(group.get('normalized'), epoch)),
+                'app_engine_http_request': {
+                    'http_method': 'POST',
+                    'relative_uri': '/builder?group={}'.format(group.get('normalized'))
+                }
+            }
 
-        checker = Task(url='/builder', params={'group':'ctrp-taskcheck'})
-        taskcheck = Queue(name='taskcheck')
-        taskcheck.add(checker)
+            task_client.create_task(default_queue, task);
+
+        task = {
+            'name': task_client.task_path(PROJECT_NAME, PROJECT_REGION,
+                                          'taskcheck', 'ctrp-taskcheck-{}'.format(epoch)),
+            'app_engine_http_request': {
+                'http_method': 'POST',
+                'relative_uri': '/builder?group=ctrp-taskcheck'
+            }
+        }
+
+        task_client.create_task(check_queue, task)
 
     return redirect('/rank')
+
+# Round a time from the Blizzard API to the nearest 60 seconds because sometimes
+# timestamps for the same kill won't be exactly the same. Yes, this is dumb.
+#
+# Adapted from https://stackoverflow.com/a/10854034/1431079. Takes a timestamp in
+# milliseconds directly from the API.
+def round_time(timestamp):
+
+    round_to = 60
+    dt = datetime.datetime.utcfromtimestamp(timestamp / 1000)
+    seconds = (dt.replace(tzinfo=None) - dt.min).seconds
+    rounding = (seconds+round_to/2) // round_to * round_to
+    rounded = dt + datetime.timedelta(0, rounding-seconds, -dt.microsecond)
+    return (rounded - datetime.datetime.utcfromtimestamp(0)).total_seconds() * 1000

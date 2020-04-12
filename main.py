@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
 
+import os
+
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'ctrptest-bc8b039a953b.json'
+os.environ['GOOGLE_CLOUD_PROJECT'] = 'ctrptest'
+
 from flask import Flask, request, Response
 from werkzeug.routing import BaseConverter
+
+from google.cloud import datastore
 
 import ctrpmodels
 import display
@@ -12,25 +19,30 @@ import rostermgmt
 app = Flask(__name__)
 app.debug = True
 
+#os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'ctraidprogress-e5d6ecec9691.json'
+#os.environ['GOOGLE_CLOUD_PROJECT'] = 'ctraidprogress'
+
+dcl = datastore.Client()
+
 class RegexConverter(BaseConverter):
     def __init__(self, url_map, *items):
         super(RegexConverter, self).__init__(url_map)
         self.regex = items[0]
 
 app.url_map.converters['regex'] = RegexConverter
-app.jinja_env.filters['normalize'] = display.normalize
+app.jinja_env.filters['normalize'] = ctrpmodels.normalize
 
 @app.route('/')
 def root():
-    return display.display()
+    return display.display(dcl)
 
 @app.route('/history')
 def history():
-    return display.display_history(request)
+    return display.display_history(dcl, request)
 
 @app.route('/loadgroups')
 def load_groups():
-    return rostermgmt.load_groups()
+    return rostermgmt.load_groups(dcl)
 
 @app.route('/rank', methods=['GET', 'POST'])
 def rank():
@@ -60,8 +72,16 @@ def display_tier(tier):
 
 @app.route('/tooltips.js')
 def tooltips():
-    return Response(display.build_tooltips(), content_type='application/javascript')
+    return Response(display.build_tooltips(dcl), content_type='application/javascript')
 
 @app.route('/loadone')
 def load_one():
     return ranker.loadone(request)
+
+@app.route('/testing')
+def testing():
+    query = dcl.query(kind='Group')
+    results = query.fetch()
+    for r in results:
+        print(r)
+    return '', 200

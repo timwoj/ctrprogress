@@ -3,60 +3,80 @@
     src: url('../static/FrizQuadrataStd.otf')
 }
 
-.group-header-name {
-    font-family:quadrata;
-    text-align:left;
-    font-size:24px;
-    padding-top:20px;
-}
-
-.group-header-ilvl {
-    font-family:quadrata;
-    text-align:right;
-    font-size:18px;
-    padding-top:20px;
-}
-
-.table-background {
-    background-repeat:no-repeat;
-    background-position:center;
-    border-spacing:5px 5px;
-    display:inline-block;
-}
-
-.table-header {
-    text-align:center;
-    color:white;
-    font-family:quadrata;
-    font-size:20px;
-}
-
 .ui-tooltip {
-    background:#303030;
-    color:white;
+    background: #303030;
+    color: white;
+}
+
+.bossalive, .bossdead {
+    font-family: quadrata;
+    font-size: 14px;
 }
 
 .bossdead {
-    font-family:quadrata;
-    font-size:14px;
     text-decoration: line-through;
-    color:#A0A0A0
-}
-
-.bossalive{
-    font-family:quadrata;
-    font-size:14px;
+    color: #A0A0A0
 }
 
 .history-date {
-    padding-top:20px;
-    text-align:center;
-    font-weight:bold;
-    font-size:110%
+    padding-top: 20px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 110%
 }
 
 .history-group-header {
-    text-align:left;
-    vertical-align:top;
-    white-space:nowrap
+    text-align: left;
+    vertical-align: top;
+    white-space: nowrap
+}
+
+
+
+
+
+
+.group-frame {
+    background-color: #DDD;
+    width: 60%;
+    margin-top: 7px;
+    border-radius: 5px;
+}
+
+.group-name {
+    font-family: quadrata;
+    text-align: left;
+    font-size: 24px;
+    padding: 4px 0px 0px 4px;
+}
+
+.group-ilvl {
+    font-family: quadrata;
+    text-align: right;
+    padding-right: 4px;
+    width: 40%;
+}
+
+.raid-frame {
+    background-color: #EEE;
+}
+
+.raid-name {
+    font-family: quadrata;
+    padding-left: 6px;
+    padding-top: 5px;
+}
+
+.raid, .raid-inp, .raid-done {
+    font-family: quadrata;
+    text-align: center;
+    padding-top: 5px;
+}
+
+.raid-inp {
+    color: #ffa500;
+}
+
+.raid-done {
+    color: #3cb731;
 }

@@ -1,0 +1,10 @@
+{%- macro raidcolor(kills, bosses) -%}
+{%- if kills == 0 -%}raid{%- elif kills < bosses -%}raid-inp{%- else -%}raid-done{%- endif -%}
+{%- endmacro -%}
+      <tr class="raid-frame">
+        <td class="raid-name">{{ name }}</td>
+        <td class="{{- raidcolor(mythic_kills, boss_count) -}}">{{ mythic_kills }}/{{ boss_count }}M</td>
+        <td class="{{- raidcolor(heroic_kills, boss_count) -}}">{{ heroic_kills }}/{{ boss_count }}H</td>
+        <td class="{{- raidcolor(normal_kills, boss_count) -}}">{{ normal_kills }}/{{ boss_count }}N</td>
+      </tr>
+

@@ -5,11 +5,9 @@ import datetime
 from flask import render_template, redirect
 import ctrpmodels
 
-def normalize(groupname):
-    return groupname.lower().replace('\'', '').replace(' ', '-').replace('"', '')
-
-def display():
-    last_updated = ctrpmodels.Global.get_last_updated()
+def display(dcl):
+    # TODO: do i bother to keep this?
+    last_updated = None
     if last_updated is None:
         last_updated = datetime.datetime.now()
 
@@ -19,18 +17,35 @@ def display():
         'tier': 24
     }
     response = render_template('header.html', **template_values)
-    response += '<table>\n'
 
-    groups = ctrpmodels.Group.query_for_singletier_display()
+    raid_map = {}
+    for raid in ctrpmodels.Constants.raids:
+        raid_map[raid.get('slug', '')] = raid.get('name', '');
+
+    groups = query_groups(dcl)
     for group in groups:
         template_values = {'group' : group}
-        response += render_template('group-raids.html', **template_values)
+        response += render_template('group-raid-header.html', **template_values)
+        for k,v in group.get('raids').items():
+            
+            raid_name = raid_map.get(k, 'Unknown Raid {}'.format(k))
+            boss_count = len(v.get('Normal', []))
+            
+            template_values = {
+                'name': raid_name,
+                'boss_count': boss_count,
+                'normal_kills': boss_count - v.get('Normal', []).count(None),
+                'heroic_kills': boss_count - v.get('Heroic', []).count(None),
+                'mythic_kills': boss_count - v.get('Mythic', []).count(None)
+            }
+            response += render_template('group-raid-raid.html', **template_values)
+        response += render_template('group-raid-footer.html')
 
-    response += '</table>\n'
     response += render_template('footer.html')
     return response, 200
 
-def build_tooltips():
+def build_tooltips(dcl):
+    return
 
     response = ('$(function() {\n'
                 '  $(document).tooltip({\n'
@@ -38,7 +53,8 @@ def build_tooltips():
                 '    content: function() {\n'
                 '      var tooltips = {};\n')
 
-    groups = ctrpmodels.Group.query_for_singletier_display()
+    groups = query_groups(dcl)
+
     for raidinfo in ctrpmodels.Constants.raids:
         raid = raidinfo[0]
         for group in groups:
@@ -87,7 +103,7 @@ def build_tooltips():
 
     return response
 
-def display_history(request):
+def display_history(dcl, request):
     group = request.form.get('group', '')
     if group:
         return display_group_history(group)
@@ -199,3 +215,8 @@ def display_tier(tier):
     response += render_template('%s.html' % tier)
     response += render_template('footer.html')
     return response, 200
+
+def query_groups(dcl, groupname=None):
+    
+    query = dcl.query(kind='Group')
+    return sorted(query.fetch(), key=lambda x: ctrpmodels.get_sort_key(x), reverse=True)

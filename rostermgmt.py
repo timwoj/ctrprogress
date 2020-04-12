@@ -17,35 +17,28 @@ import json
 import logging
 import datetime
 import time
+import requests
 
-from pytz.gae import pytz
-from google.appengine.api import urlfetch_errors
-from google.appengine.api import urlfetch
+import pytz
+import ctrpmodels
 
-from ctrpmodels import Boss
-from ctrpmodels import Constants
-from ctrpmodels import Group
-from ctrpmodels import Raid
+from google.cloud import datastore
 
-# Force the deadline for urlfetch to be 10 seconds (Default is 5).  For some
-# reason, that first lookup for the spreadsheet takes a bit.
-urlfetch.set_default_fetch_deadline(20)
-
-def load_groups():
+def load_groups(dcl):
 
     time1 = time.time()
     logging.info('retrieving roster data from Raid Builder')
     url = 'http://guild.converttoraid.com/api/teams'
     try:
-        response = urlfetch.fetch(url)
-    except urlfetch_errors.DeadlineExceededError:
-        logging.error('urlfetch threw DeadlineExceededError')
-    except urlfetch_errors.DownloadError:
-        logging.error('urlfetch threw DownloadError')
+        response = requests.get(url)
+    except requests.exceptions.Timeout:
+        logging.error('requests threw Timeout')
+    except requests.exceptions.ConnectionError:
+        logging.error('requests threw ConnectionError')
     except:
-        logging.error('urlfetch threw unknown exception')
+        logging.error('requests threw unknown exception')
 
-    jsondata = json.loads(response.content)
+    jsondata = response.json()
 
     groupcount = 0
     tooncount = 0
@@ -61,45 +54,48 @@ def load_groups():
     # history will remain even if they disband. While we're looping, also
     # remove any groups from the list to be processed that haven't had
     # a roster update since the last time we did this.
-    query = Group.query().order(Group.name)
+    query = dcl.query(kind='Group')
     results = query.fetch()
     for res in results:
+
+        name = res.get('group', '')
+        updated = res.get('rosterupdated',None)
 
         # Check for groups that don't exist in the jsondata anymore. These
         # groups were removed for whatever reason and should be deleted
         # from the database.
-        if res.name not in jsondata:
-            responses.append(('Removed', 'Removed disbanded or non-existent team from database: %s' % res.name))
-            res.key.delete()
+        if name not in jsondata:
+            responses.append(('Removed', 'Removed disbanded or non-existent team from database: %s' % name))
+            dcl.delete(res.key)
             continue
 
         # Check for groups that are in both the jsondata and database, but
         # are marked as disbanded in the json data. These should be removed
         # from the database and removed from the json data so they don't
         # get processed later.
-        elif jsondata[res.name]['status'] == 'Disbanded':
-            responses.append(('Removed', 'Removed team marked disbanded from database: %s' % res.name))
-            res.key.delete()
+        elif jsondata[name]['status'] == 'Disbanded':
+            responses.append(('Removed', 'Removed team marked disbanded from database: %s' % name))
+            dcl.delete(res.key)
 
         # if the last updated time exists in the roster data (maccus added
         # it), while we're looping through the groups, also remove any
         # groups from the list to be processed that haven't had a roster
         # update since the last time we parsed groups.
-        elif 'updated_at' in jsondata[res.name]:
+        elif 'updated_at' in jsondata[name]:
             # date comes to us as date/time with a timezone. adjust the date time
             # to add the timezone information, then pull just the date out of it
             # in UTC time.
-            updated_at = jsondata[res.name]['updated_at']
+            updated_at = jsondata[name]['updated_at']
             updatetime = datetime.datetime.strptime(updated_at['date'], '%Y-%m-%d %H:%M:%S.%f')
             timezone = updated_at['timezone'].replace('\\', '')
             localtime = pytz.timezone(timezone).localize(updatetime)
             lastupdate = localtime.astimezone(pytz.timezone('UTC')).date()
 
-            if res.rosterupdated != None and res.rosterupdated > lastupdate:
-                responses.append(('DateUnchanged', '%s hasn\'t been updated since last load (load: %s, update: %s)' % (res.name, res.rosterupdated, lastupdate)))
+            if updated and updated.date() > lastupdate:
+                responses.append(('DateUnchanged', '%s hasn\'t been updated since last load (load: %s, update: %s)' % (name, updated.date(), lastupdate)))
                 groupcount += 1
-                tooncount += len(res.toons)
-                del jsondata[res.name]
+                tooncount += len(res.get('toons',[]))
+                del jsondata[name]
 
     logging.info('num groups to process: %d', len(jsondata))
 
@@ -115,7 +111,7 @@ def load_groups():
         if jsondata[group]['status'] == 'Disbanded':
             continue
 
-        returnval = worker(group, jsondata[group])
+        returnval = worker(dcl, group, jsondata[group])
         responses.append((returnval[0], returnval[2]))
         if returnval[0] == 'Added' or returnval[0] == 'Updated':
             groupcount += 1
@@ -155,7 +151,7 @@ def load_groups():
 
     return response, 200
 
-def worker(name, group):
+def worker(dcl, name, group):
     time4 = time.time()
     logging.info('working on group %s', name)
 
@@ -178,8 +174,11 @@ def worker(name, group):
     # Check if this group already exists in the datastore.  We don't
     # want to overwrite existing progress data for a group if we don't
     # have to.
-    query = Group.query(Group.name == name)
-    results = query.fetch(1)
+    query = dcl.query(kind='Group', filters=[('group','=',name)])
+
+    results = None
+    if query:
+        results = list(query.fetch(limit=1))
 
     response = ''
     loggroup = ''
@@ -189,17 +188,13 @@ def worker(name, group):
         # there's no real reason to create groups with only that many
         # toons.
         if len(toons) >= 5:
-            newgroup = Group(name=name)
-            newgroup.aep = Raid()
-            newgroup.aep.bosses = list()
-            for boss in Constants.aepbosses:
-                newboss = Boss(name=boss)
-                newgroup.aep.bosses.append(newboss)
+            group = ctrpmodels.create_new_group(name, toons)
 
-            newgroup.toons = toons
-            newgroup.rosterupdated = datetime.date.today()
-
-            newgroup.put()
+            key = dcl.key('Group')
+            entity = datastore.Entity(key=key)
+            entity.update(group)
+            dcl.put(entity)
+            
             response = 'Added group %s with %d toons' % (name, len(toons))
             loggroup = 'Added'
         else:
@@ -209,9 +204,11 @@ def worker(name, group):
         # the group already exists and all we need to do is update the
         # toon list.  all of the other data stays the same.
         existing = results[0]
-        existing.toons = toons
-        existing.rosterupdated = datetime.date.today()
-        existing.put()
+        existing.update({
+            'toons': toons,
+            'rosterupdated': datetime.datetime.now()
+        })
+        dcl.put(existing)
         response = 'Updated group %s with %d toons' % (name, len(toons))
         loggroup = 'Updated'
 

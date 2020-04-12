@@ -1,9 +1,4 @@
-runtime: python27
-api_version: 1
-threadsafe: yes
-
-builtins:
-- remote_api: on
+runtime: python37
 
 handlers:
 - url: /favicon\.ico
@@ -31,29 +26,19 @@ handlers:
   upload: templates/howitworks\.html
 
 - url: /startrank
-  script: main.app
-  login: admin
+  script: auto
+  secure: always
 
 - url: /rank
-  script: main.app
-  login: admin
+  script: auto
+  secure: always
 
 - url: /builder
-  script: main.app
-  login: admin
+  script: auto
 
 - url: /loadgroups
-  script: main.app
-  login: admin
+  script: auto
+  secure: always
 
 - url: .*
-  script: main.app
-
-libraries:
-- name: pycrypto
-  version: latest
-- name: ssl
-  version: latest
-
-skip_files:
-- ^image_templates
+  script: auto
