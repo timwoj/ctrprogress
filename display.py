@@ -27,10 +27,10 @@ def display(dcl):
         template_values = {'group' : group}
         response += render_template('group-raid-header.html', **template_values)
         for k,v in group.get('raids').items():
-            
+
             raid_name = raid_map.get(k, 'Unknown Raid {}'.format(k))
             boss_count = len(v.get('Normal', []))
-            
+
             template_values = {
                 'name': raid_name,
                 'boss_count': boss_count,
@@ -203,6 +203,6 @@ def display_tier(tier):
     return response, 200
 
 def query_groups(dcl, groupname=None):
-    
+
     query = dcl.query(kind='Group')
     return sorted(query.fetch(), key=lambda x: ctrpmodels.get_sort_key(x), reverse=True)

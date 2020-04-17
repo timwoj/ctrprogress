@@ -43,7 +43,7 @@ def run_builder(request):
         # get a length from. This loops through the iterator and sums up how
         # many elements are in it.
         num_tasks = sum(1 for _ in tasks)
-        
+
         while num_tasks > 0:
             print("task check: waiting for {} tasks to finish".format(num_tasks))
             time.sleep(5)
@@ -55,7 +55,7 @@ def run_builder(request):
     else:
 
         query = dcl.query(kind='Group', filters=[('normalized','=',groupname)])
-        
+
         if query:
             results = list(query.fetch(limit=1))
 
@@ -171,7 +171,7 @@ def parse(raidkey, bosses, toondata, progress):
             encounters = [e for e in raid if e.get('difficulty',{}).get('name') == diff]
             if encounters:
                 encounters = encounters[0].get('progress',{}).get('encounters',[])
-            
+
                 for boss in bosses:
 
                     single_boss = [b for b in encounters if b.get('encounter',{}).get('name','') == boss]
@@ -189,7 +189,7 @@ def parse(raidkey, bosses, toondata, progress):
 
         if boss not in bossdata:
             continue
-        
+
         for diff in Constants.difficulties:
             # for each boss, grab the set of unique timestamps and sort it
             # with the last kill first
@@ -233,7 +233,7 @@ def start_ranking():
 
     epoch = datetime.datetime.now() - datetime.datetime.utcfromtimestamp(0)
     epoch = int(epoch.total_seconds())
-    
+
     if num_tasks == 0:
 
         # queue up all of the groups into individual tasks.  the configuration
