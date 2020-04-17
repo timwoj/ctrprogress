@@ -90,45 +90,58 @@ def process_group(group, write_to_db):
 
     group.update({'avgilvl': (int(avgilvl) * 100) / 100.0})
 
+    killed_today = {}
+
     # Loop through the raids that are being processed for this tier and
     # build all of the points of data that are needed.  First, update which
     # bosses have been killed for a group, then loop through the
     # difficulties and build the killed counts and the history.
     for raid in Constants.raids:
 
-        group_raid = group.get('raids', {}).get(raid.get('slug',''), {})
-        data_raid = progress.get(raid.get('slug', ''), {})
-
-        killedtoday = {}
-        found_new_kills = False
+        slug = raid.get('slug', '')
+        group_raid = group.get('raids', {}).get(slug, {})
+        data_raid = progress.get(slug, {})
+        boss_count = len(group_raid.get('Normal', []))
 
         for diff in Constants.difficulties:
-            killedtoday[diff] = []
-            # TODO: remove this .lower() once the group data is fixed in the database
-            for idx, group_boss in enumerate(group_raid.get(diff.lower(), [])):
+            diff_count = 0
+            for idx, group_boss in enumerate(group_raid.get(diff, [])):
                 if not group_boss and data_raid.get(diff,[])[idx]:
-                    killedtoday[diff].append(raid.get('bosses',[])[idx])
+                    if slug not in killed_today:
+                        killed_today[slug] = {}
+                    if diff not in killed_today[slug]:
+                        killed_today[slug][diff] = []
+                    killed_today[slug][diff].append(raid.get('bosses',[])[idx])
                     print('new {} kill of {}'.format(diff, raid.get('bosses',[])[idx]))
-                    found_new_kills = True
+                    diff_count += 1
+                elif group_boss:
+                    diff_count += 1
 
-        if found_new_kills and write_to_db:
-            new_hist = {
-                'group': group.get('group'),
-                'date': datetime.datetime.now(),
-                'kills': killedtoday
-            }
+            if slug in killed_today and diff in killed_today.get(slug, {}):
+                killed_today[slug]['boss_count'] = boss_count
+                killed_today[slug]['{}_kills'.format(diff)] = diff_count
 
-            key = dcl.Key('History')
+    if len(killed_today) != 0:
+
+        new_hist = {
+            'group': group.get('group'),
+            'date': datetime.datetime.now(),
+            'kills': killed_today
+        }
+        print(new_hist)
+
+        group.update({'has_kills': True})
+
+        if write_to_db:
+            key = dcl.key('History')
             entity = datastore.Entity(key=key)
             entity.update(new_hist)
             dcl.put(entity)
 
-            group.update({'has_kills': True})
-            
-        group.update({'sort_key': ctrpmodels.get_sort_key(group)})
+    group.update({'sort_key': ctrpmodels.get_sort_key(group)})
+    group.update({'raids': progress})
 
     if write_to_db:
-        group.update({'raids': progress})
         dcl.put(group)
 
     print('Finished building group {}'.format(group.get('group')))

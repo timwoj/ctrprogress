@@ -1,0 +1,16 @@
+{%- if kills|length > 0 -%}
+Killed
+  {%- if kills|length == 1 -%}
+  <b> {{ kills[0] }}</b>
+  {%- else -%}
+  <b> {{ kills|length }}</b> bosses
+  {%- endif -%}
+</b> in {{ diff }} {{ name }} and is now <b>{{ total }}/{{ bosses }}{{ diff.0 }}</b><br/>
+{%- if kills|length > 1 -%}
+<div style="margin-left:15px;font-weight:bold">
+  {%- for k in kills %}
+  {{ k }}</br>
+{% endfor %}
+</div>
+{%- endif -%}
+{%- endif -%}

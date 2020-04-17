@@ -120,15 +120,53 @@ def display_history(dcl):
     response += '<table style="margin-left:50px;margin-right:50px">\n'
 
     # request all of the history entries, sorted in reverse order by date
-    curdate = datetime.date.today()
-    oneday = datetime.timedelta(1)
+    curdate = datetime.datetime.now()
+    curdate = datetime.datetime(curdate.year, curdate.month, curdate.day)
+    oneday = datetime.timedelta(days=1)
 
-    for i in xrange(0, 13):
-        response += '<tr><td colspan="2" class="history-date">%s</td></tr>\n' % curdate
+    raid_names = {}
+    for raid in ctrpmodels.Constants.raids:
+        raid_names[raid.get('slug', '')] = raid.get('name', '')
+
+    for i in range(0, 13):
+        response += '<tr><td colspan="2" class="history-date">%s</td></tr>\n' % curdate.date()
 
         # Retrieve all of the entires for this date ordered by group name
-        updates = ctrpmodels.History.get_for_date(curdate)
-        if not updates:
+        query = dcl.query(kind='History',
+                          filters=[('date','>=',curdate),('date','<=',curdate+oneday)])
+        updates = None
+        if query:
+            updates = query.fetch()
+
+        update_count = 0
+        if updates:
+
+            for update in updates:
+                update_count += 1
+
+                template_values = { 'group': update.get('group', '') }
+                response += render_template('history-header.html', **template_values)
+
+                kills = update.get('kills', {})
+                for slug in kills.keys():
+                    raid_data = kills.get(slug, {})
+
+                    for diff in ctrpmodels.Constants.difficulties:
+                        diff_data = raid_data.get(diff, {})
+                        if diff_data:
+                            template_values = {
+                                'name': raid_names.get(slug, ''),
+                                'diff': diff,
+                                'kills': diff_data.get('kills', []),
+                                'total': diff_data.get('total', 0),
+                                'bosses': raid_data.get('boss_count', 0)
+                            }
+                            response += render_template('history-entry.html', **template_values)
+
+                response += '\n</td>\n</tr>\n'
+
+        if not update_count:
+
             # if there were no results for this date, add just a simple
             # entry displaying nothing
             response += '<tr>'
@@ -143,19 +181,6 @@ def display_history(dcl):
                 response += 'No new kills for this date!'
             response += '</td>'
             response += '</tr>\n'
-
-        else:
-
-            # now loop through the groups and output the updates in some
-            # fashion
-            for update in updates:
-
-                template_values = {
-                    'history': update,
-                    'num_aep_bosses': len(ctrpmodels.Constants.aepbosses)
-                }
-                response += render_template('history.html', **template_values)
-                response += '\n'
 
         curdate -= oneday
 
