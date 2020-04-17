@@ -110,8 +110,9 @@ def process_group(group, write_to_db):
                     if slug not in killed_today:
                         killed_today[slug] = {}
                     if diff not in killed_today[slug]:
-                        killed_today[slug][diff] = []
-                    killed_today[slug][diff].append(raid.get('bosses',[])[idx])
+                        killed_today[slug][diff] = { 'kills': [] }
+
+                    killed_today[slug][diff]['kills'].append(raid.get('bosses',[])[idx])
                     print('new {} kill of {}'.format(diff, raid.get('bosses',[])[idx]))
                     diff_count += 1
                 elif group_boss:
@@ -119,7 +120,7 @@ def process_group(group, write_to_db):
 
             if slug in killed_today and diff in killed_today.get(slug, {}):
                 killed_today[slug]['boss_count'] = boss_count
-                killed_today[slug]['{}_kills'.format(diff)] = diff_count
+                killed_today[slug][diff]['total'] = diff_count
 
     if len(killed_today) != 0:
 
