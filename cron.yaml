@@ -1,6 +1,1 @@
 cron:
-- description: "progress builder job"
-  url: /startrank
-  schedule: every day 02:00
-  timezone: America/Phoenix
-  
